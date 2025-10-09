@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { PlusIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "../../context/AuthContext";
 import "../../styles/admin/componentadmin.css";
+import api from "../../api/api"; // ✅ axios instance tự động gắn token
 
 const AnnouncementManagement = () => {
   const { user } = useAuth();
@@ -22,29 +22,25 @@ const AnnouncementManagement = () => {
   const fetchAnnouncements = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
-      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/announcements`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      console.log("📢 [Announcements] Fetching...");
+      const res = await api.get("/announcements");
       setAnnouncements(res.data);
+      console.log("✅ [Announcements] Loaded:", res.data.length);
     } catch (err) {
-      console.error("Error fetching announcements:", err);
+      console.error("❌ Error fetching announcements:", err);
       setError("Không thể tải danh sách thông báo.");
     } finally {
       setLoading(false);
     }
   };
 
-  // 🏢 Lấy danh sách căn hộ (để gửi riêng)
+  // 🏢 Lấy danh sách căn hộ
   const fetchApartments = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/apartments`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.get("/apartments");
       setApartments(res.data);
     } catch (err) {
-      console.error("Error fetching apartments:", err);
+      console.error("❌ Error fetching apartments:", err);
     }
   };
 
@@ -60,62 +56,52 @@ const AnnouncementManagement = () => {
     e.preventDefault();
     setError(null);
     try {
-      const token = localStorage.getItem("token");
-      const config = {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      };
-
       const payload = {
         title: formData.title,
         content: formData.content,
         scope: formData.scope,
-        targetApartment: formData.scope === "apartment" ? formData.targetApartment : null,
-        issuedBy: user?._id, // 👈 Gửi kèm id admin tạo
+        targetApartment:
+          formData.scope === "apartment" ? formData.targetApartment : null,
+        issuedBy: user?._id,
       };
 
       if (isEditing && formData._id) {
-        await axios.put(
-          `${import.meta.env.VITE_API_BASE_URL}/api/announcements/${formData._id}`,
-          payload,
-          config
-        );
+        await api.put(`/announcements/${formData._id}`, payload);
+        console.log("📝 Updated announcement:", formData._id);
       } else {
-        await axios.post(
-          `${import.meta.env.VITE_API_BASE_URL}/api/announcements`,
-          payload,
-          config
-        );
+        await api.post("/announcements", payload);
+        console.log("📨 Created new announcement");
       }
 
-      setFormData({ title: "", content: "", scope: "system", targetApartment: "" });
+      setFormData({
+        title: "",
+        content: "",
+        scope: "system",
+        targetApartment: "",
+      });
       setIsEditing(false);
       fetchAnnouncements();
     } catch (err) {
-      console.error("Error saving announcement:", err);
+      console.error("❌ Error saving announcement:", err);
       setError(err.response?.data?.message || "Không thể lưu thông báo.");
     }
   };
 
-  // ✏️ Edit
+  // ✏️ Sửa
   const handleEdit = (item) => {
     setFormData(item);
     setIsEditing(true);
   };
 
-  // ❌ Delete
+  // ❌ Xóa
   const handleDelete = async (id) => {
     if (!window.confirm("Bạn có chắc muốn xóa thông báo này?")) return;
     try {
-      const token = localStorage.getItem("token");
-      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/announcements/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await api.delete(`/announcements/${id}`);
+      console.log("🗑️ Deleted announcement:", id);
       fetchAnnouncements();
     } catch (err) {
-      console.error("Error deleting:", err);
+      console.error("❌ Error deleting announcement:", err);
       setError("Không thể xóa thông báo.");
     }
   };
@@ -198,7 +184,12 @@ const AnnouncementManagement = () => {
               type="button"
               className="btn-cancel"
               onClick={() => {
-                setFormData({ title: "", content: "", scope: "system", targetApartment: "" });
+                setFormData({
+                  title: "",
+                  content: "",
+                  scope: "system",
+                  targetApartment: "",
+                });
                 setIsEditing(false);
               }}
             >
@@ -238,7 +229,9 @@ const AnnouncementManagement = () => {
                         a.scope === "system" ? "badge-blue" : "badge-yellow"
                       }`}
                     >
-                      {a.scope === "system" ? "Toàn hệ thống" : "Theo căn hộ"}
+                      {a.scope === "system"
+                        ? "Toàn hệ thống"
+                        : "Theo căn hộ"}
                     </span>
                   </td>
                   <td>{a.targetApartment?.apartmentCode || "-"}</td>
@@ -248,7 +241,10 @@ const AnnouncementManagement = () => {
                     <button className="btn-edit" onClick={() => handleEdit(a)}>
                       <PencilIcon className="h-5 w-5" />
                     </button>
-                    <button className="btn-delete" onClick={() => handleDelete(a._id)}>
+                    <button
+                      className="btn-delete"
+                      onClick={() => handleDelete(a._id)}
+                    >
                       <TrashIcon className="h-5 w-5" />
                     </button>
                   </td>

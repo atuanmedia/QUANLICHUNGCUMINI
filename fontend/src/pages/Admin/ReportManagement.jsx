@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { EyeIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
+import { EyeIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "../../context/AuthContext";
 import "../../styles/admin/componentadmin.css";
-
+import api from "../../api/api"; // ✅ axios instance có interceptor
 
 const ReportManagement = () => {
   const { user } = useAuth();
@@ -16,18 +15,14 @@ const ReportManagement = () => {
   const fetchReports = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
-      const config = {
-        headers: { Authorization: `Bearer ${token}` },
+      console.log("📢 [Reports] Fetching reports...");
+      const { data } = await api.get("/reports", {
         params: { status: filterStatus === "all" ? "" : filterStatus },
-      };
-      const { data } = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL}/api/reports`,
-        config
-      );
+      });
       setReports(data);
+      console.log("✅ [Reports] Loaded:", data.length, "reports");
     } catch (err) {
-      console.error("Error fetching reports:", err);
+      console.error("❌ Error fetching reports:", err);
       setError("Không thể tải danh sách phản ánh.");
     } finally {
       setLoading(false);
@@ -88,34 +83,33 @@ const ReportManagement = () => {
                   <td>{new Date(r.createdAt).toLocaleDateString("vi-VN")}</td>
                   <td>
                     <span
-                      className={`badge ${r.status === "resolved"
+                      className={`badge ${
+                        r.status === "resolved"
                           ? "badge-green"
                           : r.status === "in_progress"
-                            ? "badge-blue"
-                            : r.status === "cancelled"
-                              ? "badge-red"
-                              : "badge-yellow"
-                        }`}
+                          ? "badge-blue"
+                          : r.status === "cancelled"
+                          ? "badge-red"
+                          : "badge-yellow"
+                      }`}
                     >
                       {r.status === "pending"
                         ? "Chờ xử lý"
                         : r.status === "in_progress"
-                          ? "Đang xử lý"
-                          : r.status === "resolved"
-                            ? "Đã giải quyết"
-                            : "Đã hủy"}
+                        ? "Đang xử lý"
+                        : r.status === "resolved"
+                        ? "Đã giải quyết"
+                        : "Đã hủy"}
                     </span>
                   </td>
                   <td className="action-buttons">
                     <button
                       className="btn-view"
-                      onClick={() => alert(`Phản ánh: ${r.title}\n\n${r.description}`)}
+                      onClick={() =>
+                        alert(`Phản ánh: ${r.title}\n\n${r.description}`)
+                      }
                     >
-                      {/* Icon Eye */}
-                      <svg className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
+                      <EyeIcon className="h-5 w-5 text-gray-600" />
                     </button>
                   </td>
                 </tr>

@@ -1,15 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { useAuth } from '../../context/AuthContext';
-import Spinner from '../../components/common/Spinner';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { useAuth } from "../../context/AuthContext";
+import Spinner from "../../components/common/Spinner";
+import { Link } from "react-router-dom";
 import {
   UsersIcon,
   HomeIcon,
   DocumentTextIcon,
   ExclamationTriangleIcon,
-} from '@heroicons/react/24/outline';
-import { Bar } from 'react-chartjs-2';
+} from "@heroicons/react/24/outline";
+import { Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -18,7 +17,10 @@ import {
   Title,
   Tooltip,
   Legend,
-} from 'chart.js';
+} from "chart.js";
+
+// ✅ Import axios instance có interceptor (gắn token tự động)
+import api from "../../api/api";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -52,18 +54,17 @@ const DashboardAdmin = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // 🔹 Gọi API thống kê
   useEffect(() => {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem('token');
-        const config = {
-          headers: { Authorization: `Bearer ${token}` },
-        };
-        const { data } = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/api/reports/stats`,
-          config
-        );
+        console.log("📊 [Dashboard] Fetching admin stats...");
+
+        // ✅ Gọi qua api instance để tự động gắn token admin_token
+        const { data } = await api.get("/reports/stats");
+
+        console.log("📈 [Dashboard] API response:", data);
 
         // Gán giá trị mặc định = 0 nếu rỗng
         setStats({
@@ -80,14 +81,14 @@ const DashboardAdmin = () => {
           },
         });
       } catch (err) {
-        console.error('Error fetching dashboard stats:', err);
-        setError('Không thể tải dữ liệu tổng quan.');
+        console.error("❌ Error fetching dashboard stats:", err);
+        setError("Không thể tải dữ liệu tổng quan.");
       } finally {
         setLoading(false);
       }
     };
 
-    if (user && user.role === 'admin') {
+    if (user && user.role === "admin") {
       fetchStats();
     }
   }, [user]);
@@ -103,19 +104,16 @@ const DashboardAdmin = () => {
 
   // ✅ Biểu đồ tổng quan tài chính
   const financialOverviewData = {
-    labels: ['Tổng thu', 'Tổng nợ'],
+    labels: ["Tổng thu", "Tổng nợ"],
     datasets: [
       {
-        label: 'Tổng quan tài chính (VND)',
+        label: "Tổng quan tài chính (VND)",
         data: [
           stats?.financials?.totalRevenue ?? 0,
           stats?.financials?.totalDebt ?? 0,
         ],
-        backgroundColor: [
-          'rgba(75, 192, 192, 0.6)',
-          'rgba(255, 99, 132, 0.6)',
-        ],
-        borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
+        backgroundColor: ["rgba(75, 192, 192, 0.6)", "rgba(255, 99, 132, 0.6)"],
+        borderColor: ["rgba(75, 192, 192, 1)", "rgba(255, 99, 132, 1)"],
         borderWidth: 1,
       },
     ],
@@ -125,61 +123,69 @@ const DashboardAdmin = () => {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { position: 'top' },
-      title: {
-        display: true,
-        text: 'Tổng quan tài chính (VNĐ)',
-      },
+      legend: { position: "top" },
+      title: { display: true, text: "Tổng quan tài chính (VNĐ)" },
     },
   };
 
   return (
-  <div className="dashboard-container">
-    <h1 className="dashboard-title">Bảng điều khiển</h1>
+    <div className="dashboard-container">
+      <h1 className="dashboard-title">Bảng điều khiển</h1>
 
-    {/* Thẻ thống kê */}
-    <div className="dashboard-grid">
-      <Link to="/admin/residents" className="stat-card">
-        <div className="stat-icon"><UsersIcon className="h-6 w-6" /></div>
-        <div className="stat-text">
-          <p>Tổng số cư dân</p>
-          <p>{stats?.residents?.total ?? 0}</p>
-        </div>
-      </Link>
+      {/* Thẻ thống kê */}
+      <div className="dashboard-grid">
+        <Link to="/admin/residents" className="stat-card">
+          <div className="stat-icon">
+            <UsersIcon className="h-6 w-6" />
+          </div>
+          <div className="stat-text">
+            <p>Tổng số cư dân</p>
+            <p>{stats?.residents?.total ?? 0}</p>
+          </div>
+        </Link>
 
-      <Link to="/admin/apartments" className="stat-card">
-        <div className="stat-icon"><HomeIcon className="h-6 w-6" /></div>
-        <div className="stat-text">
-          <p>Căn hộ có người ở</p>
-          <p>{`${stats?.apartments?.occupied ?? 0} / ${stats?.apartments?.total ?? 0}`}</p>
-        </div>
-      </Link>
+        <Link to="/admin/apartments" className="stat-card">
+          <div className="stat-icon">
+            <HomeIcon className="h-6 w-6" />
+          </div>
+          <div className="stat-text">
+            <p>Căn hộ có người ở</p>
+            <p>
+              {`${stats?.apartments?.occupied ?? 0} / ${
+                stats?.apartments?.total ?? 0
+              }`}
+            </p>
+          </div>
+        </Link>
 
-      <Link to="/admin/invoices" className="stat-card">
-        <div className="stat-icon"><DocumentTextIcon className="h-6 w-6" /></div>
-        <div className="stat-text">
-          <p>Hóa đơn chưa thanh toán</p>
-          <p>{stats?.invoices?.unpaid ?? 0}</p>
-        </div>
-      </Link>
+        <Link to="/admin/invoices" className="stat-card">
+          <div className="stat-icon">
+            <DocumentTextIcon className="h-6 w-6" />
+          </div>
+          <div className="stat-text">
+            <p>Hóa đơn chưa thanh toán</p>
+            <p>{stats?.invoices?.unpaid ?? 0}</p>
+          </div>
+        </Link>
 
-      <Link to="/admin/reports" className="stat-card">
-        <div className="stat-icon"><ExclamationTriangleIcon className="h-6 w-6" /></div>
-        <div className="stat-text">
-          <p>Báo cáo chờ xử lý</p>
-          <p>{stats?.reports?.pending ?? 0}</p>
-        </div>
-      </Link>
+        <Link to="/admin/reports" className="stat-card">
+          <div className="stat-icon">
+            <ExclamationTriangleIcon className="h-6 w-6" />
+          </div>
+          <div className="stat-text">
+            <p>Báo cáo chờ xử lý</p>
+            <p>{stats?.reports?.pending ?? 0}</p>
+          </div>
+        </Link>
+      </div>
+
+      {/* Biểu đồ */}
+      <div className="chart-card">
+        <h2 className="text-xl font-semibold mb-4">Tổng quan tài chính</h2>
+        <Bar data={financialOverviewData} options={financialOverviewOptions} />
+      </div>
     </div>
-
-    {/* Biểu đồ */}
-    <div className="chart-card">
-      <h2 className="text-xl font-semibold mb-4">Tổng quan tài chính</h2>
-      <Bar data={financialOverviewData} options={financialOverviewOptions} />
-    </div>
-  </div>
-);
-
+  );
 };
 
 export default DashboardAdmin;

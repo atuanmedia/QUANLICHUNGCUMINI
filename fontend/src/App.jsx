@@ -50,6 +50,8 @@ function App() {
         <Routes>
             {/* Authentication */}
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/admin/login" element={<LoginPage />} />
+
 
             {/* Admin Routes */}
             <Route
@@ -67,7 +69,7 @@ function App() {
                 <Route path="announcements" element={<AnnouncementManagement />} />
                 <Route path="invoices" element={<InvoiceManagement />} />
                 <Route path="reports" element={<ReportManagement />} />
-                 <Route path="temp-residence" element={<TempResidenceAdmin />} />
+                <Route path="temp-residence" element={<TempResidenceAdmin />} />
             </Route>
 
             {/* Resident Routes */}
@@ -86,7 +88,7 @@ function App() {
                 <Route path="reports" element={<ResidentReports />} />
                 <Route path="temp-residence" element={<TempResidenceResident />} />
 
-                
+
             </Route>
 
             {/* Fallback Routes */}

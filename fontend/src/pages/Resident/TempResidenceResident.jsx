@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import axios from "axios";
+import api from "../../api/api"; // ✅ thay vì axios
 import { useAuth } from "../../context/AuthContext";
-import "../../styles/client/temp-residence.css"; // ✅ thêm dòng này
+import "../../styles/client/temp-residence.css";
 
 const TempResidenceResident = () => {
   const { user } = useAuth();
@@ -21,16 +21,15 @@ const TempResidenceResident = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem("token");
-      const res = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/api/temp-residence`,
-        { ...form, resident: user.residentId },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      console.log("📤 [TempResidenceResident] Sending form:", form);
+      const res = await api.post("/temp-residence", {
+        ...form,
+        resident: user?.residentId,
+      });
       setMessage("✅ Gửi khai báo thành công!");
       console.log("Created:", res.data);
     } catch (err) {
-      console.error("Error:", err);
+      console.error("❌ Error:", err);
       setMessage("❌ Gửi thất bại, vui lòng thử lại!");
     }
   };
@@ -38,43 +37,23 @@ const TempResidenceResident = () => {
   return (
     <div className="temp-residence-container">
       <h1 className="page-title">📄 Khai báo Tạm trú / Tạm vắng</h1>
-
       <form onSubmit={handleSubmit} className="temp-residence-form">
+        {/* Các input như cũ */}
         <div className="form-group">
           <label>Loại:</label>
-          <select
-            name="type"
-            value={form.type}
-            onChange={handleChange}
-            className="input-field"
-          >
+          <select name="type" value={form.type} onChange={handleChange} className="input-field">
             <option value="tam_tru">Tạm trú</option>
             <option value="tam_vang">Tạm vắng</option>
           </select>
         </div>
-
         <div className="form-group">
           <label>Từ ngày:</label>
-          <input
-            type="date"
-            name="fromDate"
-            value={form.fromDate}
-            onChange={handleChange}
-            className="input-field"
-          />
+          <input type="date" name="fromDate" value={form.fromDate} onChange={handleChange} className="input-field" />
         </div>
-
         <div className="form-group">
           <label>Đến ngày:</label>
-          <input
-            type="date"
-            name="toDate"
-            value={form.toDate}
-            onChange={handleChange}
-            className="input-field"
-          />
+          <input type="date" name="toDate" value={form.toDate} onChange={handleChange} className="input-field" />
         </div>
-
         <div className="form-group">
           <label>Lý do:</label>
           <input
@@ -86,7 +65,6 @@ const TempResidenceResident = () => {
             placeholder="Nhập lý do tạm trú / tạm vắng..."
           />
         </div>
-
         <div className="form-group">
           <label>Nơi đến / Nơi tạm trú:</label>
           <input
@@ -98,12 +76,10 @@ const TempResidenceResident = () => {
             placeholder="Nhập địa chỉ nơi bạn sẽ ở / đến..."
           />
         </div>
-
         <button type="submit" className="submit-btn">
           Gửi khai báo
         </button>
       </form>
-
       {message && <p className="status-message">{message}</p>}
     </div>
   );

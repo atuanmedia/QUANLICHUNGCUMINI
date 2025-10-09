@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
 import { PlusIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
-import "../../styles/admin/componentadmin.css"; // dùng chung css admin
+import "../../styles/admin/componentadmin.css";
+import api from "../../api/api"; // ✅ dùng instance có interceptor
 
 const InvoiceManagement = () => {
   const { user } = useAuth();
@@ -25,18 +25,13 @@ const InvoiceManagement = () => {
   const fetchInvoices = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
-      const config = {
-        headers: { Authorization: `Bearer ${token}` },
+      console.log("📄 [Invoice] Fetching invoices...");
+      const { data } = await api.get("/invoices", {
         params: { search: searchTerm },
-      };
-      const { data } = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL}/api/invoices`,
-        config
-      );
+      });
       setInvoices(data);
     } catch (err) {
-      console.error("Error fetching invoices:", err);
+      console.error("❌ Error fetching invoices:", err);
       setError("Không thể tải danh sách hóa đơn.");
     } finally {
       setLoading(false);
@@ -46,16 +41,11 @@ const InvoiceManagement = () => {
   // 📦 Lấy danh sách căn hộ
   const fetchApartments = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const { data } = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL}/api/apartments`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      console.log("🏠 [Invoice] Fetching apartments...");
+      const { data } = await api.get("/apartments");
       setApartments(data);
     } catch (err) {
-      console.error("Error fetching apartments:", err);
+      console.error("❌ Error fetching apartments:", err);
     }
   };
 
@@ -88,39 +78,27 @@ const InvoiceManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem("token");
-      const config = {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      };
-
       const [yearStr, monthStr] = formData.period.split("-");
       const invoiceData = {
         apartment: formData.apartment,
         month: Number(monthStr),
         year: Number(yearStr),
-        electricityBill: formData.type === "electricity" ? Number(formData.amount) : 0,
+        electricityBill:
+          formData.type === "electricity" ? Number(formData.amount) : 0,
         waterBill: formData.type === "water" ? Number(formData.amount) : 0,
-        serviceFee: formData.type === "management_fee" ? Number(formData.amount) : 0,
+        serviceFee:
+          formData.type === "management_fee" ? Number(formData.amount) : 0,
         otherFees: formData.type === "other" ? Number(formData.amount) : 0,
         dueDate: formData.dueDate,
         status: formData.status,
       };
 
       if (currentInvoice) {
-        await axios.put(
-          `${import.meta.env.VITE_API_BASE_URL}/api/invoices/${currentInvoice._id}`,
-          invoiceData,
-          config
-        );
+        await api.put(`/invoices/${currentInvoice._id}`, invoiceData);
+        console.log("✅ [Invoice] Updated:", currentInvoice._id);
       } else {
-        await axios.post(
-          `${import.meta.env.VITE_API_BASE_URL}/api/invoices`,
-          invoiceData,
-          config
-        );
+        await api.post("/invoices", invoiceData);
+        console.log("✅ [Invoice] Created new invoice");
       }
 
       fetchInvoices();
@@ -135,14 +113,11 @@ const InvoiceManagement = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa hóa đơn này?")) return;
     try {
-      const token = localStorage.getItem("token");
-      await axios.delete(
-        `${import.meta.env.VITE_API_BASE_URL}/api/invoices/${id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await api.delete(`/invoices/${id}`);
+      console.log("🗑️ [Invoice] Deleted:", id);
       fetchInvoices();
     } catch (err) {
-      console.error("Error deleting invoice:", err);
+      console.error("❌ Error deleting invoice:", err);
       setError("Không thể xóa hóa đơn.");
     }
   };
@@ -265,11 +240,7 @@ const InvoiceManagement = () => {
             {currentInvoice ? "Cập nhật" : "Thêm mới"}
           </button>
           {currentInvoice && (
-            <button
-              type="button"
-              onClick={resetForm}
-              className="btn-cancel"
-            >
+            <button type="button" onClick={resetForm} className="btn-cancel">
               Hủy
             </button>
           )}
@@ -321,7 +292,9 @@ const InvoiceManagement = () => {
                       ? "Phí quản lý"
                       : "Khác"}
                   </td>
-                  <td>{new Intl.NumberFormat("vi-VN").format(inv.totalAmount)} ₫</td>
+                  <td>
+                    {new Intl.NumberFormat("vi-VN").format(inv.totalAmount)} ₫
+                  </td>
                   <td>
                     {inv.year}-{String(inv.month).padStart(2, "0")}
                   </td>
