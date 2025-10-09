@@ -1,0 +1,32 @@
+/* frontend/src/components/common/common.css */
+
+/* Hiệu ứng nút bấm */
+button {
+  transition: all 0.2s ease;
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Input group animation */
+.input-group {
+  position: relative;
+}
+
+.input-group input:focus {
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+}
+
+.input-group label {
+  transition: color 0.3s ease;
+}
+.input-group input:focus + label,
+.input-group input:focus-visible + label {
+  color: #4f46e5;
+}
+
+/* Hiệu ứng hover nhẹ */
+button:hover {
+  filter: brightness(1.05);
+}

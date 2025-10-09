@@ -1,0 +1,130 @@
+.invoice-page {
+  padding: 2rem;
+  background: linear-gradient(to bottom right, #eef2ff, #f9fafb);
+  min-height: auto;
+  animation: fadeIn 0.5s ease-in;
+}
+
+.invoice-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #0c4a6e;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  letter-spacing: 0.5px;
+}
+
+.invoice-loading,
+.invoice-empty {
+  text-align: center;
+  color: #475569;
+  font-size: 1.1rem;
+  margin-top: 2rem;
+}
+
+.invoice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.invoice-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  padding: 1.2rem;
+  transition: all 0.3s ease;
+  border-top: 4px solid transparent;
+}
+
+.invoice-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.1);
+}
+
+.invoice-card.paid {
+  border-top-color: #16a34a;
+}
+.invoice-card.unpaid {
+  border-top-color: #dc2626;
+}
+.invoice-card.pending {
+  border-top-color: #f59e0b;
+}
+
+.invoice-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.8rem;
+}
+
+.invoice-header h3 {
+  font-size: 1.1rem;
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.icon {
+  font-size: 1.4rem;
+}
+.paid-icon {
+  color: #16a34a;
+}
+.unpaid-icon {
+  color: #dc2626;
+}
+.pending-icon {
+  color: #f59e0b;
+}
+
+.invoice-detail {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+  color: #334155;
+}
+
+.invoice-detail li {
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+
+.invoice-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 0.8rem;
+}
+
+.total {
+  color: #0c4a6e;
+  font-weight: 700;
+}
+
+.btn-pay {
+  background: #0c4a6e;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.9rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.btn-pay:hover {
+  background: #0369a1;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

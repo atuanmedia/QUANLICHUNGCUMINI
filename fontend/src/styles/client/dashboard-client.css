@@ -1,0 +1,151 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+.resident-dashboard {
+  font-family: 'Inter', sans-serif;
+  animation: fadeIn 0.5s ease-in-out;
+  padding: 2rem;
+  color: var(--text);
+  background: linear-gradient(180deg, #f8fafc 0%, #edf2ff 100%);
+  min-height: calc(100vh - 300px);
+  border-radius: 18px;
+  box-shadow: 0 8px 28px rgba(11, 20, 55, 0.06);
+  margin-top: 2rem;
+}
+
+/* Tiêu đề */
+.resident-dashboard-title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.3px;
+}
+
+.resident-dashboard-sub {
+  font-size: 1.05rem;
+  color: var(--muted);
+  margin-bottom: 2rem;
+  font-weight: 500;
+}
+
+/* Danh sách tính năng */
+.resident-feature-list {
+  list-style: none;
+  margin: 0 0 2rem 0;
+  padding: 0;
+}
+
+.resident-feature-list li {
+  background: #f8fafc;
+  padding: 0.85rem 1.1rem;
+  border-radius: 10px;
+  margin-bottom: 0.6rem;
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 6px rgba(11, 20, 55, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  transition: all 0.25s ease;
+}
+
+.resident-feature-list li:hover {
+  background: #eef2ff;
+  transform: translateX(4px);
+}
+
+/* CARD layout */
+.resident-card-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+   width: 100%;
+}
+
+.resident-card {
+  background: white;
+  padding: 1.25rem;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(11, 20, 55, 0.08);
+  border: 1px solid var(--border);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+   min-height: 190px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.resident-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  border-radius: 14px;
+  z-index: 0;
+}
+
+.resident-card:hover::before {
+  opacity: 0.12;
+}
+
+.resident-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 10px 22px rgba(11, 20, 55, 0.15);
+}
+
+.resident-card h3 {
+  color: var(--primary);
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+.resident-card p {
+  color: var(--muted);
+  position: relative;
+  z-index: 1;
+}
+.resident-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.resident-card ul li {
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.95rem;
+  color: #334155;
+}
+
+.resident-card ul li:last-child {
+  border-bottom: none;
+}
+
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .resident-dashboard {
+    padding: 1rem;
+  }
+
+  .resident-dashboard-title {
+    font-size: 1.6rem;
+  }
+}
