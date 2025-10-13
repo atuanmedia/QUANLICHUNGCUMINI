@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../../api/api';
 import { useAuth } from '../../context/AuthContext';
 import Spinner from '../../components/common/Spinner';
 import { Link } from 'react-router-dom';
@@ -53,10 +53,7 @@ const DashboardAdmin = () => {
                     headers: { Authorization: `Bearer ${token}` },
                 };
                 // Endpoint backend trả dữ liệu tổng quan
-                const { data } = await axios.get(
-                    `${import.meta.env.VITE_API_BASE_URL}/api/reports/stats`,
-                    config
-                );
+                const { data } = await api.get(`/reports/stats`, config);
                 setStats(data);
             } catch (err) {
                 console.error('Error fetching dashboard stats:', err);

@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from "react";
-import axios from "axios";
+import api from "../api/api";
 import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext();
@@ -9,7 +9,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // kept for backwards-compatibility in logs
 
   // 🧩 Load user từ token theo URL hiện tại
   useEffect(() => {
@@ -29,7 +29,7 @@ export const AuthProvider = ({ children }) => {
         );
 
         if (token) {
-          const { data } = await axios.get(`${API_BASE_URL}/api/auth/profile`, {
+          const { data } = await api.get(`/auth/profile`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           console.log("✅ [Auth Init] Loaded user:", data);
@@ -53,8 +53,8 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     console.log("🚀 [Login] Start:", email);
     try {
-      const { data } = await axios.post(
-        `${API_BASE_URL}/api/auth/login`,
+      const { data } = await api.post(
+        `/auth/login`,
         { email, password },
         { headers: { "Content-Type": "application/json" } }
       );

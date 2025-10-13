@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { FaCheckCircle, FaExclamationCircle, FaWallet } from "react-icons/fa";
+import {
+  FaCheckCircle,
+  FaExclamationCircle,
+  FaWallet,
+  FaTimesCircle,
+} from "react-icons/fa";
 import { motion } from "framer-motion";
 import api from "../../api/api";
 import { useAuth } from "../../context/AuthContext";
@@ -9,7 +14,10 @@ const ResidentInvoices = () => {
   const { user } = useAuth();
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [qrData, setQrData] = useState(null); // ✅ Lưu dữ liệu QR
+  const [showQR, setShowQR] = useState(false);
 
+  // 🧾 Lấy danh sách hóa đơn
   useEffect(() => {
     const fetchInvoices = async () => {
       try {
@@ -26,6 +34,21 @@ const ResidentInvoices = () => {
     };
     fetchInvoices();
   }, []);
+
+  // 💳 Hàm xử lý khi bấm “Thanh toán ngay”
+  const handlePayment = async (invoiceId) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await api.get(`/payment/qr-demo/${invoiceId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setQrData(res.data);
+      setShowQR(true);
+    } catch (error) {
+      console.error("❌ Lỗi khi tạo QR:", error);
+      alert("Không thể tạo mã QR thanh toán.");
+    }
+  };
 
   if (loading) return <div className="invoice-loading">Đang tải hóa đơn...</div>;
 
@@ -60,7 +83,8 @@ const ResidentInvoices = () => {
             >
               <div className="invoice-header">
                 <h3>
-                  Căn hộ: {inv.apartment?.apartmentCode || "N/A"} ({inv.month}/{inv.year})
+                  Căn hộ: {inv.apartment?.apartmentCode || "N/A"} ({inv.month}/
+                  {inv.year})
                 </h3>
                 {inv.status === "paid" ? (
                   <FaCheckCircle className="icon paid-icon" />
@@ -93,11 +117,48 @@ const ResidentInvoices = () => {
                 </p>
 
                 {inv.status === "unpaid" && (
-                  <button className="btn-pay">Thanh toán ngay</button>
+                  <button
+                    className="btn-pay"
+                    onClick={() => handlePayment(inv._id)}
+                  >
+                    Thanh toán ngay
+                  </button>
                 )}
               </div>
             </motion.div>
           ))}
+        </div>
+      )}
+
+      {/* 🧾 Popup hiển thị QR */}
+      {showQR && qrData && (
+        <div className="qr-modal">
+          <div className="qr-content">
+            <button className="qr-close" onClick={() => setShowQR(false)}>
+              <FaTimesCircle />
+            </button>
+            <h2>Quét mã QR để thanh toán</h2>
+            <img
+              src={qrData.qrUrl}
+              alt="QR thanh toán"
+              className="qr-image"
+            />
+            <p>
+              <b>Ngân hàng:</b> {qrData.bank}
+            </p>
+            <p>
+              <b>Số tài khoản:</b> {qrData.accountNo}
+            </p>
+            <p>
+              <b>Chủ tài khoản:</b> {qrData.accountName}
+            </p>
+            <p>
+              <b>Số tiền:</b> {qrData.amount.toLocaleString()} ₫
+            </p>
+            <p>
+              <b>Nội dung:</b> {qrData.info}
+            </p>
+          </div>
         </div>
       )}
     </div>

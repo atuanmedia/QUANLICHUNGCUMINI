@@ -63,6 +63,65 @@
   justify-content: flex-end; /* ✅ Đưa nút sang bên phải */
 }
 
+/* Ẩn input gốc */
+.hidden-file-input {
+  display: none;
+}
+
+/* Nút upload tuỳ chỉnh */
+.custom-upload-button {
+  display: inline-flex;
+  align-items: center;
+  background-color: #d32f2f;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 50px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-top: 12px;
+  user-select: none;
+  width: 150px;
+}
+
+.custom-upload-button:hover {
+  background-color: #891818;
+}
+
+.upload-icon {
+  font-size: 16px;
+  margin-right: 8px;
+}
+
+.upload-text {
+  text-transform: uppercase;
+}
+
+/* Xem trước ảnh */
+.image-preview {
+  display: flex;
+  justify-content: flex-start; /* ảnh nằm bên trái */
+  align-items: center;
+  margin-top: 12px;
+  height: 300px; /* chiều cao cố định */
+  overflow: hidden;
+ 
+}
+
+/* Ảnh bên trong */
+.image-preview img {
+  width: auto;
+  height: 100%;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
+
+
+
+
+
+
 /*  */
 
 

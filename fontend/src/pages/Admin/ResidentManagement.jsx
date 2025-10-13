@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
-import axios from "../../api/api";
-import { PlusIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import api from "../../api/api";
+import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import Swal from "sweetalert2";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import "../../styles/admin/componentadmin.css";
 
 const ResidentManagement = () => {
@@ -17,41 +20,36 @@ const ResidentManagement = () => {
     idCardNumber: "",
     email: "",
     password: "",
-    apartment: "", // ✅ phải có key này
+    apartment: "",
     isHeadOfHousehold: false,
   });
 
-  // 📌 Lấy danh sách cư dân
+  // 📌 Fetch residents (search)
   const fetchResidents = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      const { data } = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL}/api/residents`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          params: { search: searchTerm },
-        }
-      );
+      const { data } = await api.get(`/residents`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { search: searchTerm },
+      });
       setResidents(data);
     } catch (err) {
-      console.error("Error fetching residents:", err);
+      console.error("❌ Error fetching residents:", err);
+      toast.error("⚠️ Lỗi khi tải danh sách cư dân!");
       setError("Không thể tải danh sách cư dân.");
     } finally {
       setLoading(false);
     }
   };
 
-  // 📌 Lấy danh sách căn hộ
+  // 📌 Fetch apartments
   const fetchApartments = async () => {
     try {
       const token = localStorage.getItem("token");
-      const { data } = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL}/api/apartments`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const { data } = await api.get(`/apartments`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setApartments(data);
     } catch (err) {
       console.error("Error fetching apartments:", err);
@@ -59,11 +57,17 @@ const ResidentManagement = () => {
   };
 
   useEffect(() => {
-    fetchResidents();
     fetchApartments();
+  }, []);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      fetchResidents();
+    }, 500);
+    return () => clearTimeout(timeout);
   }, [searchTerm]);
 
-  // 📌 Xử lý thay đổi input
+  // 📌 Handle change
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
@@ -87,14 +91,11 @@ const ResidentManagement = () => {
     });
   };
 
-  // 📌 Submit form (thêm hoặc sửa)
+  // 📌 Submit form (Thêm / Sửa)
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem("token");
-      console.log("🔑 Token gửi lên:", token);
-      console.log("📦 Payload gửi lên:", formData);
-
       const config = {
         headers: {
           "Content-Type": "application/json",
@@ -102,53 +103,73 @@ const ResidentManagement = () => {
         },
       };
 
-      // ✅ Gửi đúng tên trường mà backend yêu cầu (apartment)
-      const payload = { ...formData };
+      const payload = {
+        ...formData,
+        isHeadOfHousehold: !!formData.isHeadOfHousehold,
+      };
 
       if (!payload.apartment) {
-        alert("Vui lòng chọn căn hộ trước khi lưu!");
+        toast.warn("⚠️ Vui lòng chọn căn hộ trước khi lưu!");
         return;
       }
 
       if (currentResident) {
-        await axios.put(
-          `${import.meta.env.VITE_API_BASE_URL}/api/residents/${currentResident._id}`,
-          payload,
-          config
-        );
+        await api.put(`/residents/${currentResident._id}`, payload, config);
+        toast.success("✅ Cập nhật cư dân thành công!");
       } else {
-        await axios.post(
-          `${import.meta.env.VITE_API_BASE_URL}/api/residents`,
-          payload,
-          config
-        );
+        await api.post(`/residents`, payload, config);
+        toast.success("👤 Thêm cư dân mới thành công!");
       }
 
       fetchResidents();
       resetForm();
     } catch (err) {
       console.error("❌ Error saving resident:", err);
-      setError("Không thể lưu cư dân.");
-    }
-  };
-
-  // 📌 Xóa cư dân
-  const handleDelete = async (id) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa cư dân này?")) return;
-    try {
-      const token = localStorage.getItem("token");
-      await axios.delete(
-        `${import.meta.env.VITE_API_BASE_URL}/api/residents/${id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+      toast.error(
+        err.response?.data?.message ||
+          "Không thể lưu cư dân. Vui lòng kiểm tra thông tin!"
       );
-      fetchResidents();
-    } catch (err) {
-      console.error("Error deleting resident:", err);
-      setError("Không thể xóa cư dân.");
     }
   };
 
-  // 📌 Khi nhấn Sửa
+  // 📌 Delete resident (SweetAlert confirm)
+  const handleDelete = async (id) => {
+    const result = await Swal.fire({
+      title: "Xóa cư dân này?",
+      text: "Thao tác này sẽ xóa vĩnh viễn cư dân và tài khoản liên kết!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#e11d48",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Xóa ngay",
+      cancelButtonText: "Hủy",
+      reverseButtons: true,
+      background: "#fff",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const token = localStorage.getItem("token");
+        await api.delete(`/residents/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        toast.success("🗑️ Đã xóa cư dân thành công!");
+        fetchResidents();
+      } catch (err) {
+        console.error("Error deleting resident:", err);
+        toast.error("❌ Không thể xóa cư dân!");
+      }
+    } else {
+      Swal.fire({
+        title: "Đã hủy thao tác",
+        icon: "info",
+        timer: 1200,
+        showConfirmButton: false,
+      });
+    }
+  };
+
+  // 📌 Edit resident
   const handleEdit = (resident) => {
     setCurrentResident(resident);
     setFormData({
@@ -161,14 +182,15 @@ const ResidentManagement = () => {
       apartment: resident.apartment?._id || "",
       isHeadOfHousehold: resident.isHeadOfHousehold,
     });
+    toast.info("✏️ Đang chỉnh sửa thông tin cư dân");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
     <div className="resident-page">
-      <h2 className="resident-title">Quản lý cư dân</h2>
+      <h2 className="resident-title">👥 Quản lý cư dân</h2>
 
-      {/* Form thêm/sửa cư dân */}
+      {/* ✅ Form thêm/sửa cư dân */}
       <form onSubmit={handleSubmit} className="resident-form">
         <div className="form-row">
           <div className="form-group">
@@ -226,16 +248,18 @@ const ResidentManagement = () => {
             />
           </div>
 
-          <div className="form-group">
-            <label>Mật khẩu *</label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-            />
-          </div>
+          {!currentResident && (
+            <div className="form-group">
+              <label>Mật khẩu *</label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+              />
+            </div>
+          )}
 
           <div className="form-group">
             <label>Căn hộ *</label>
@@ -269,7 +293,7 @@ const ResidentManagement = () => {
 
         <div className="modal-footer">
           <button type="submit" className="btn-save">
-            {currentResident ? "Cập nhật" : "Thêm mới"}
+            {currentResident ? "💾 Cập nhật" : "➕ Thêm mới"}
           </button>
           {currentResident && (
             <button type="button" onClick={resetForm} className="btn-cancel">
@@ -279,44 +303,18 @@ const ResidentManagement = () => {
         </div>
       </form>
 
-      {/* Thanh tìm kiếm */}
-      {/* <div className="resident-controls">
+      {/* 🔍 Thanh tìm kiếm */}
+      <div className="resident-controls">
         <input
           type="text"
-          placeholder="🔍 Tìm kiếm theo tên, SĐT, email..."
+          placeholder="🔍 Tìm kiếm theo tên, SĐT, CCCD hoặc căn hộ..."
           className="resident-search"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-      </div> */}
-
-      <div className="resident-controls">
-        <div className="search-container">
-          <div className="search-icon">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="1.5"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
-              />
-            </svg>
-
-          </div>
-          <input
-            type="text"
-            className="resident-search"
-            placeholder="Tìm kiếm theo căn hộ, loại, kỳ..."
-          />
-        </div>
       </div>
 
-      {/* Bảng cư dân */}
+      {/* 🧾 Bảng cư dân */}
       <div className="resident-table">
         <table>
           <thead>

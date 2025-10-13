@@ -1804,3 +1804,82 @@ body,
     fill: #ffffff !important; /* #ffffff là mã màu trắng */
     /* Hoặc dùng: fill: white !important; */
 }
+/* SweetAlert popup */
+.swal2-popup {
+  border-radius: 16px !important;
+  animation: fadeIn 0.25s ease;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Toastify gradient style */
+.Toastify__toast--success {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+}
+.Toastify__toast--error {
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+}
+.Toastify__toast--info {
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+}
+/* Nút đổi theme */
+.theme-toggle-btn {
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: flex;
+}
+
+.theme-toggle-btn:hover {
+  background-color: var(--hover-bg);
+}
+
+.icon-sun,
+.icon-moon {
+  width: 18px;
+  height: 18px;
+  color: var(--text-color);
+}
+
+/* Badge chào mừng */
+.welcome-badge {
+  background-color: rgba(59, 130, 246, 0.15); /* xanh nhạt */
+  color: #1e3a8a;
+  font-weight: 500;
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  transition: all 0.3s ease;
+}
+
+.welcome-badge:hover {
+  background-color: rgba(59, 130, 246, 0.25);
+}
+/* Fix lỗi SweetAlert2 bị chặn click */
+.swal2-container {
+  z-index: 99999 !important;
+}
+
+.swal2-popup {
+  z-index: 100000 !important;
+  position: relative !important;
+}

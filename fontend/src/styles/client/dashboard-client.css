@@ -62,7 +62,6 @@
 }
 
 .resident-card {
-  background: white;
   padding: 1.25rem;
   border-radius: 14px;
   box-shadow: 0 4px 12px rgba(11, 20, 55, 0.08);
@@ -75,6 +74,20 @@
   flex-direction: column;
   justify-content: flex-start;
 }
+
+.resident-card {
+  background: #e3ebf6;
+  animation: softColorShift 10s infinite alternate;
+}
+
+@keyframes softColorShift {
+  0%   { background: #dbe6f6; }
+  25%  { background: #b7cae5; }
+  50%  { background: #d6d4d4; }
+  75%  { background: #b9cde0; }
+  100% { background: #7b93aa; }
+}
+
 
 .resident-card::before {
   content: "";

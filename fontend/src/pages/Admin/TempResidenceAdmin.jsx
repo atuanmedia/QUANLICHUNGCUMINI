@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import api from "../../api/api"; // ✅ axios instance có interceptor
 import { FaFilePdf, FaTrash } from "react-icons/fa";
+import Swal from "sweetalert2";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import "../../styles/admin/temp-residence.css";
-// import "../../styles/admin/componentadmin.css"; // optional nếu bạn muốn đồng nhất style
 
 const TempResidenceAdmin = () => {
   const [records, setRecords] = useState([]);
@@ -16,13 +18,12 @@ const TempResidenceAdmin = () => {
   const fetchRecords = async () => {
     setLoading(true);
     try {
-      console.log("📄 [TempResidenceAdmin] Fetching records...");
-      const res = await api.get("/temp-residence"); // interceptor tự gắn token
+      const res = await api.get("/temp-residence");
       setRecords(res.data || []);
-      console.log("✅ [TempResidenceAdmin] Loaded:", res.data.length);
+      toast.success(`📄 Đã tải ${res.data.length} hồ sơ thành công!`);
     } catch (err) {
       console.error("❌ fetchRecords:", err);
-      alert("❌ Lỗi khi tải danh sách hồ sơ!");
+      toast.error("❌ Lỗi khi tải danh sách hồ sơ!");
     } finally {
       setLoading(false);
     }
@@ -31,16 +32,14 @@ const TempResidenceAdmin = () => {
   // ✅ Xuất PDF
   const handleExportPDF = async (id, fullName) => {
     try {
-      console.log("📤 [TempResidenceAdmin] Exporting PDF...");
       const res = await api.get(`/temp-residence/${id}/export`, {
-        responseType: "blob", // ⚙️ Đảm bảo trả file PDF
+        responseType: "blob",
       });
 
       const blob = new Blob([res.data], { type: "application/pdf" });
       const link = document.createElement("a");
       link.href = window.URL.createObjectURL(blob);
 
-      // 🔹 Đặt tên file an toàn
       const safeName = fullName
         ?.normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
@@ -48,22 +47,44 @@ const TempResidenceAdmin = () => {
 
       link.download = `giay_tam_tru_tam_vang_${safeName || "unknown"}.pdf`;
       link.click();
+
+      toast.success(`📤 Xuất PDF cho ${fullName || "Cư dân"} thành công!`);
     } catch (err) {
       console.error("❌ Export PDF error:", err);
-      alert("❌ Lỗi khi xuất PDF!");
+      toast.error("❌ Lỗi khi xuất file PDF!");
     }
   };
 
-  // ✅ Xóa hồ sơ
+  // ✅ Xóa hồ sơ với SweetAlert confirm
   const handleDelete = async (id) => {
-    if (!window.confirm("Bạn có chắc muốn xóa hồ sơ này không?")) return;
-    try {
-      await api.delete(`/temp-residence/${id}`);
-      alert("🗑️ Đã xóa hồ sơ thành công!");
-      fetchRecords(); // reload danh sách
-    } catch (err) {
-      console.error("❌ Delete error:", err);
-      alert("❌ Xóa thất bại, vui lòng thử lại!");
+    const result = await Swal.fire({
+      title: "Xóa hồ sơ này?",
+      text: "Thao tác này không thể hoàn tác!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#e11d48",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Xóa ngay",
+      cancelButtonText: "Hủy",
+      reverseButtons: true,
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await api.delete(`/temp-residence/${id}`);
+        toast.success("🗑️ Đã xóa hồ sơ thành công!");
+        fetchRecords();
+      } catch (err) {
+        console.error("❌ Delete error:", err);
+        toast.error("❌ Không thể xóa hồ sơ!");
+      }
+    } else {
+      Swal.fire({
+        title: "Đã hủy thao tác",
+        icon: "info",
+        timer: 1200,
+        showConfirmButton: false,
+      });
     }
   };
 
@@ -72,9 +93,12 @@ const TempResidenceAdmin = () => {
       <h2 className="resident-title">📋 Quản lý Tạm trú / Tạm vắng</h2>
 
       {loading ? (
-        <p className="loading-text">Đang tải dữ liệu...</p>
+        <div className="loading-overlay">
+          <div className="spinner"></div>
+          <p>Đang tải dữ liệu...</p>
+        </div>
       ) : (
-        <div className="resident-table">
+        <div className="resident-table animate-fade">
           <table>
             <thead>
               <tr>

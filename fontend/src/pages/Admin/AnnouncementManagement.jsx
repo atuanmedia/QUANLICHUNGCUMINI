@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { PlusIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "../../context/AuthContext";
+import Swal from "sweetalert2";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import "../../styles/admin/componentadmin.css";
-import api from "../../api/api"; // ✅ axios instance tự động gắn token
+import api from "../../api/api";
 
 const AnnouncementManagement = () => {
   const { user } = useAuth();
   const [announcements, setAnnouncements] = useState([]);
   const [apartments, setApartments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
@@ -18,17 +20,15 @@ const AnnouncementManagement = () => {
     targetApartment: "",
   });
 
-  // 🧩 Lấy danh sách thông báo
+  // 📢 Lấy danh sách thông báo
   const fetchAnnouncements = async () => {
     try {
       setLoading(true);
-      console.log("📢 [Announcements] Fetching...");
       const res = await api.get("/announcements");
       setAnnouncements(res.data);
-      console.log("✅ [Announcements] Loaded:", res.data.length);
     } catch (err) {
-      console.error("❌ Error fetching announcements:", err);
-      setError("Không thể tải danh sách thông báo.");
+      console.error("❌ Lỗi tải thông báo:", err);
+      toast.error("Không thể tải danh sách thông báo!");
     } finally {
       setLoading(false);
     }
@@ -40,12 +40,12 @@ const AnnouncementManagement = () => {
       const res = await api.get("/apartments");
       setApartments(res.data);
     } catch (err) {
-      console.error("❌ Error fetching apartments:", err);
+      console.error("❌ Lỗi tải căn hộ:", err);
     }
   };
 
   useEffect(() => {
-    if (user && user.role === "admin") {
+    if (user?.role === "admin") {
       fetchAnnouncements();
       fetchApartments();
     }
@@ -54,7 +54,6 @@ const AnnouncementManagement = () => {
   // 🧾 Gửi form (tạo hoặc sửa)
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
     try {
       const payload = {
         title: formData.title,
@@ -67,10 +66,10 @@ const AnnouncementManagement = () => {
 
       if (isEditing && formData._id) {
         await api.put(`/announcements/${formData._id}`, payload);
-        console.log("📝 Updated announcement:", formData._id);
+        toast.success("📢 Cập nhật thông báo thành công!");
       } else {
         await api.post("/announcements", payload);
-        console.log("📨 Created new announcement");
+        toast.success("📢 Tạo thông báo mới thành công!");
       }
 
       setFormData({
@@ -83,7 +82,7 @@ const AnnouncementManagement = () => {
       fetchAnnouncements();
     } catch (err) {
       console.error("❌ Error saving announcement:", err);
-      setError(err.response?.data?.message || "Không thể lưu thông báo.");
+      toast.error("Không thể lưu thông báo!");
     }
   };
 
@@ -91,18 +90,40 @@ const AnnouncementManagement = () => {
   const handleEdit = (item) => {
     setFormData(item);
     setIsEditing(true);
+    toast.info("✏️ Đang chỉnh sửa thông báo...");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   // ❌ Xóa
   const handleDelete = async (id) => {
-    if (!window.confirm("Bạn có chắc muốn xóa thông báo này?")) return;
-    try {
-      await api.delete(`/announcements/${id}`);
-      console.log("🗑️ Deleted announcement:", id);
-      fetchAnnouncements();
-    } catch (err) {
-      console.error("❌ Error deleting announcement:", err);
-      setError("Không thể xóa thông báo.");
+    const result = await Swal.fire({
+      title: "Xóa thông báo này?",
+      text: "Hành động này không thể hoàn tác!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#e11d48",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Xóa ngay",
+      cancelButtonText: "Hủy",
+      reverseButtons: true,
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await api.delete(`/announcements/${id}`);
+        toast.success("🗑️ Đã xóa thông báo!");
+        fetchAnnouncements();
+      } catch (err) {
+        console.error("❌ Xóa thông báo lỗi:", err);
+        toast.error("Không thể xóa thông báo!");
+      }
+    } else {
+      Swal.fire({
+        title: "Đã hủy thao tác",
+        icon: "info",
+        timer: 1200,
+        showConfirmButton: false,
+      });
     }
   };
 
@@ -112,21 +133,23 @@ const AnnouncementManagement = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  if (loading) return <p className="loading-text">Đang tải dữ liệu...</p>;
+  if (loading)
+    return (
+      <div className="loading-overlay">
+        <div className="spinner"></div>
+        <p>Đang tải dữ liệu...</p>
+      </div>
+    );
 
   return (
-    <div className="resident-page">
-      <div className="header-flex">
-        <h2 className="resident-title">📢 Quản lý Thông báo</h2>
-      </div>
-
-      {error && <p className="error-box">{error}</p>}
+    <div className="resident-page fade-in">
+      <h2 className="resident-title">📢 Quản lý Thông báo</h2>
 
       {/* 🧾 Form thêm / sửa */}
       <form onSubmit={handleSubmit} className="resident-form">
         <div className="form-row">
           <div className="form-group">
-            <label>Tiêu đề</label>
+            <label>Tiêu đề *</label>
             <input
               type="text"
               name="title"
@@ -137,7 +160,7 @@ const AnnouncementManagement = () => {
           </div>
 
           <div className="form-group">
-            <label>Phạm vi thông báo</label>
+            <label>Phạm vi thông báo *</label>
             <select name="scope" value={formData.scope} onChange={handleChange}>
               <option value="system">Toàn hệ thống</option>
               <option value="apartment">Theo căn hộ</option>
@@ -146,7 +169,7 @@ const AnnouncementManagement = () => {
 
           {formData.scope === "apartment" && (
             <div className="form-group">
-              <label>Chọn căn hộ</label>
+              <label>Chọn căn hộ *</label>
               <select
                 name="targetApartment"
                 value={formData.targetApartment}
@@ -165,7 +188,7 @@ const AnnouncementManagement = () => {
         </div>
 
         <div className="form-group">
-          <label>Nội dung</label>
+          <label>Nội dung *</label>
           <textarea
             name="content"
             rows="4"
@@ -200,7 +223,7 @@ const AnnouncementManagement = () => {
       </form>
 
       {/* 🗂️ Danh sách thông báo */}
-      <div className="resident-table">
+      <div className="resident-table animate-fade">
         <table>
           <thead>
             <tr>

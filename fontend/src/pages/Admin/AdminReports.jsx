@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import axios from '../../api/api';
 import { useAuth } from '../../context/AuthContext';
 import Spinner from '../../components/common/Spinner';
 import { Bar, Pie } from 'react-chartjs-2';
@@ -21,7 +21,7 @@ const AdminReports = () => {
                 const config = {
                     headers: { Authorization: `Bearer ${token}` },
                 };
-                const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/reports/stats`, config);
+                const { data } = await api.get(`/reports/stats`, config);
                 setStats(data);
             } catch (err) {
                 console.error("Error fetching stats:", err);

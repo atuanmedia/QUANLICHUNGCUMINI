@@ -1,0 +1,143 @@
+/* GIAO DIỆN CHUNG */
+.support-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 20px;
+  padding: 24px;
+  background: #f8fafc;
+  min-height: calc(100vh - 64px);
+}
+
+/* TRÁI: KHUNG CHAT */
+.chat-section {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+}
+
+.section-title {
+  color: #0c4a6e;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.chat-container {
+  flex: 1;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px;
+  background: #f9fafb;
+  overflow-y: auto;
+  max-height: 65vh;
+  scroll-behavior: smooth;
+}
+
+.chat-row {
+  display: flex;
+  margin: 6px 0;
+}
+
+.chat-row.left {
+  justify-content: flex-start;
+}
+
+.chat-row.right {
+  justify-content: flex-end;
+}
+
+.chat-bubble {
+  padding: 8px 12px;
+  border-radius: 10px;
+  max-width: 75%;
+  font-size: 14px;
+  line-height: 1.4;
+  word-wrap: break-word;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.chat-row.left .chat-bubble {
+  background: #e0f2fe;
+  color: #0c4a6e;
+}
+
+.chat-row.right .chat-bubble {
+  background: #0c4a6e;
+  color: #fff;
+}
+
+/* INPUT GỬI TIN */
+.chat-input-box {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.chat-input-box input {
+  flex: 1;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  outline: none;
+}
+
+.chat-input-box input:focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
+}
+
+.chat-input-box button {
+  border: none;
+  border-radius: 8px;
+  background: #0c4a6e;
+  color: #fff;
+  font-weight: 600;
+  padding: 0 16px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.chat-input-box button:hover {
+  background: #075985;
+}
+
+/* PHẢI: THÔNG TIN ADMIN + MAP */
+.info-section {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.info-card {
+  background: #f1f5f9;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.map-container iframe {
+  width: 100%;
+  height: 300px;
+  border-radius: 10px;
+  border: 0;
+}
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .support-wrapper {
+    grid-template-columns: 1fr;
+  }
+
+  .map-container iframe {
+    height: 250px;
+  }
+}

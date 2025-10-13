@@ -1,0 +1,73 @@
+/* 🎯 Chỉ style cho phần mới thêm — không ảnh hưởng layout cũ */
+
+/* ====== Tổng quan thu chi tháng này ====== */
+.finance-overview .finance-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.finance-overview .finance-box {
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.finance-overview .finance-box:hover {
+  transform: translateY(-4px);
+}
+
+.finance-overview .finance-box p {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.finance-overview .finance-box h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.finance-overview .income {
+  background-color: #ecfdf5;
+  color: #15803d;
+}
+
+.finance-overview .expense {
+  background-color: #fef9c3;
+  color: #a16207;
+}
+
+.finance-overview .profit {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+}
+
+/* ====== Cảnh báo hóa đơn chưa thanh toán ====== */
+.alert-section .alert-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.alert-section .alert-item {
+  background: #fef2f2;
+  border-left: 4px solid #dc2626;
+  color: #991b1b;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.alert-section .alert-item:hover {
+  background: #fee2e2;
+  transform: translateX(4px);
+}
+
+.alert-section .alert-item .amount {
+  font-weight: bold;
+  color: #dc2626;
+}

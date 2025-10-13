@@ -37,6 +37,10 @@ app.use('/api/invoices', require('./src/routes/invoiceRoutes'));
 app.use('/api/reports', require('./src/routes/reportRoutes'));
 app.use('/api/announcements', require('./src/routes/announcementRoutes'));
 app.use('/api/temp-residence', require('./src/routes/tempResidenceRoutes'));
+app.use("/api/payment", require("./src/routes/paymentRoutes"));
+
+
+
 // ===== Error Handling =====
 app.use(notFound);
 app.use(errorHandler);

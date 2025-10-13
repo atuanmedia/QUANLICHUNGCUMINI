@@ -11,7 +11,8 @@ import {
   XMarkIcon,
   UserCircleIcon,
   ArrowLeftEndOnRectangleIcon,
-  ClipboardDocumentListIcon, // ✅ Thêm icon mới
+  ClipboardDocumentListIcon,
+  LifebuoyIcon, // ✅ Icon Hỗ trợ
 } from "@heroicons/react/24/outline";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -55,7 +56,7 @@ const ResidentLayout = () => {
             <span>Cổng cư dân</span>
           </Link>
 
-          {/* Desktop */}
+          {/* Desktop menu */}
           <div className="navbar-menu">
             <NavLink
               to="/dashboard"
@@ -81,13 +82,19 @@ const ResidentLayout = () => {
               text="Phản ánh"
               active={isActive("/reports")}
             />
-
-            {/* ✅ Thêm nút Tạm trú / Tạm vắng */}
             <NavLink
               to="/temp-residence"
               icon={ClipboardDocumentListIcon}
-              text="Khai Báo"
+              text="Khai báo"
               active={isActive("/temp-residence")}
+            />
+
+            {/* ✅ Thêm mục Hỗ trợ */}
+            <NavLink
+              to="/support"
+              icon={LifebuoyIcon}
+              text="Hỗ trợ"
+              active={isActive("/support")}
             />
 
             {/* User info */}
@@ -166,15 +173,24 @@ const ResidentLayout = () => {
               active={isActive("/reports")}
               onNavigate={() => setMobileMenuOpen(false)}
             />
-            {/* ✅ Thêm mobile */}
             <NavLink
               to="/temp-residence"
               icon={ClipboardDocumentListIcon}
-              text="Tạm trú / Tạm vắng"
+              text="Khai báo"
               mobile
               active={isActive("/temp-residence")}
               onNavigate={() => setMobileMenuOpen(false)}
             />
+            {/* ✅ Hỗ trợ Mobile */}
+            <NavLink
+              to="/support"
+              icon={LifebuoyIcon}
+              text="Hỗ trợ"
+              mobile
+              active={isActive("/support")}
+              onNavigate={() => setMobileMenuOpen(false)}
+            />
+
             <button
               type="button"
               className="logout-btn"
@@ -197,9 +213,7 @@ const ResidentLayout = () => {
             key={src}
             src={src}
             alt={`banner-${i + 1}`}
-            className={`banner-image ${
-              i === currentBanner ? "active" : "hidden"
-            }`}
+            className={`banner-image ${i === currentBanner ? "active" : "hidden"}`}
             onError={(e) => (e.currentTarget.style.display = "none")}
           />
         ))}

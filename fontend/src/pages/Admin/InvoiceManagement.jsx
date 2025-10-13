@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { PlusIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import Swal from "sweetalert2";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import "../../styles/admin/componentadmin.css";
-import api from "../../api/api"; // ✅ dùng instance có interceptor
+import api from "../../api/api";
 
 const InvoiceManagement = () => {
   const { user } = useAuth();
   const [invoices, setInvoices] = useState([]);
   const [apartments, setApartments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [currentInvoice, setCurrentInvoice] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [formData, setFormData] = useState({
@@ -25,38 +27,37 @@ const InvoiceManagement = () => {
   const fetchInvoices = async () => {
     try {
       setLoading(true);
-      console.log("📄 [Invoice] Fetching invoices...");
       const { data } = await api.get("/invoices", {
         params: { search: searchTerm },
       });
       setInvoices(data);
     } catch (err) {
-      console.error("❌ Error fetching invoices:", err);
-      setError("Không thể tải danh sách hóa đơn.");
+      console.error("❌ Lỗi tải hóa đơn:", err);
+      toast.error("⚠️ Không thể tải danh sách hóa đơn!");
     } finally {
       setLoading(false);
     }
   };
 
-  // 📦 Lấy danh sách căn hộ
+  // 🏢 Lấy danh sách căn hộ
   const fetchApartments = async () => {
     try {
-      console.log("🏠 [Invoice] Fetching apartments...");
       const { data } = await api.get("/apartments");
       setApartments(data);
     } catch (err) {
-      console.error("❌ Error fetching apartments:", err);
+      console.error("❌ Lỗi tải căn hộ:", err);
+      toast.error("⚠️ Không thể tải danh sách căn hộ!");
     }
   };
 
   useEffect(() => {
-    if (user && user.role === "admin") {
+    if (user?.role === "admin") {
       fetchInvoices();
       fetchApartments();
     }
   }, [user, searchTerm]);
 
-  // 📩 Xử lý form
+  // 📝 Xử lý form
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -74,7 +75,7 @@ const InvoiceManagement = () => {
     });
   };
 
-  // 📤 Thêm / sửa hóa đơn
+  // 💾 Thêm hoặc sửa hóa đơn
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -95,34 +96,54 @@ const InvoiceManagement = () => {
 
       if (currentInvoice) {
         await api.put(`/invoices/${currentInvoice._id}`, invoiceData);
-        console.log("✅ [Invoice] Updated:", currentInvoice._id);
+        toast.success("✅ Cập nhật hóa đơn thành công!");
       } else {
         await api.post("/invoices", invoiceData);
-        console.log("✅ [Invoice] Created new invoice");
+        toast.success("🧾 Tạo hóa đơn mới thành công!");
       }
 
       fetchInvoices();
       resetForm();
     } catch (err) {
-      console.error("❌ Error saving invoice:", err);
-      setError("Không thể lưu hóa đơn.");
+      console.error("❌ Lỗi lưu hóa đơn:", err);
+      toast.error("Không thể lưu hóa đơn, vui lòng kiểm tra lại!");
     }
   };
 
-  // 📄 Xóa hóa đơn
+  // 🗑️ Xóa hóa đơn
   const handleDelete = async (id) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa hóa đơn này?")) return;
-    try {
-      await api.delete(`/invoices/${id}`);
-      console.log("🗑️ [Invoice] Deleted:", id);
-      fetchInvoices();
-    } catch (err) {
-      console.error("❌ Error deleting invoice:", err);
-      setError("Không thể xóa hóa đơn.");
+    const result = await Swal.fire({
+      title: "Xóa hóa đơn này?",
+      text: "Thao tác này sẽ xóa vĩnh viễn dữ liệu!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#e11d48",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Xóa ngay",
+      cancelButtonText: "Hủy",
+      reverseButtons: true,
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await api.delete(`/invoices/${id}`);
+        toast.success("🗑️ Đã xóa hóa đơn thành công!");
+        fetchInvoices();
+      } catch (err) {
+        console.error("❌ Lỗi xóa hóa đơn:", err);
+        toast.error("Không thể xóa hóa đơn!");
+      }
+    } else {
+      Swal.fire({
+        title: "Đã hủy thao tác",
+        icon: "info",
+        timer: 1200,
+        showConfirmButton: false,
+      });
     }
   };
 
-  // ✏️ Sửa hóa đơn
+  // ✏️ Chỉnh sửa
   const handleEdit = (invoice) => {
     const periodValue =
       invoice.year && invoice.month
@@ -148,14 +169,13 @@ const InvoiceManagement = () => {
       status: invoice.status,
       period: periodValue,
     });
+    toast.info("✏️ Đang chỉnh sửa hóa đơn");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
     <div className="resident-page">
-      <div className="header-flex">
-        <h2 className="resident-title">Quản lý hóa đơn</h2>
-      </div>
+      <h2 className="resident-title">💰 Quản lý hóa đơn</h2>
 
       {/* Form thêm/sửa */}
       <form onSubmit={handleSubmit} className="resident-form">
@@ -237,7 +257,7 @@ const InvoiceManagement = () => {
 
         <div className="modal-footer">
           <button type="submit" className="btn-save">
-            {currentInvoice ? "Cập nhật" : "Thêm mới"}
+            {currentInvoice ? "💾 Cập nhật" : "➕ Thêm mới"}
           </button>
           {currentInvoice && (
             <button type="button" onClick={resetForm} className="btn-cancel">
@@ -293,7 +313,10 @@ const InvoiceManagement = () => {
                       : "Khác"}
                   </td>
                   <td>
-                    {new Intl.NumberFormat("vi-VN").format(inv.totalAmount)} ₫
+                    {new Intl.NumberFormat("vi-VN").format(
+                      inv.totalAmount || 0
+                    )}{" "}
+                    ₫
                   </td>
                   <td>
                     {inv.year}-{String(inv.month).padStart(2, "0")}

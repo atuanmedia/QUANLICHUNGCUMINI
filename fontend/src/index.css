@@ -1,3 +1,107 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* Progress bar màu admin */
+#nprogress .bar {
+  background: linear-gradient(90deg, #2563eb, #4f46e5, #9333ea);
+  height: 3px;
+}
+
+/* Toastify */
+.Toastify__toast--success {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+}
+.Toastify__toast--error {
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+}
+.Toastify__toast--info {
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+}
+.Toastify__toast--warn {
+  background: linear-gradient(135deg, #ca8a04, #eab308);
+}
+
+/* Fade-in body khi load */
+body {
+  animation: fadein 0.3s ease;
+}
+@keyframes fadein {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* =======================
+   🎨 THEME VARIABLES
+======================= */
+:root {
+  --bg-color: #f8fafc;
+  --text-color: #1e293b;
+  --sidebar-bg: #ffffff;
+  --card-bg: #ffffff;
+  --primary-color: #2563eb;
+  --accent-color: #3b82f6;
+  --border-color: #e2e8f0;
+  --hover-bg: #f1f5f9;
+}
+
+[data-theme="dark"] {
+  --bg-color: #0f172a;
+  --text-color: #e2e8f0;
+  --sidebar-bg: #1e293b;
+  --card-bg: #1e293b;
+  --primary-color: #60a5fa;
+  --accent-color: #93c5fd;
+  --border-color: #334155;
+  --hover-bg: #334155;
+}
+
+/* =======================
+   🎯 APPLY THEME
+======================= */
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  transition: all 0.3s ease-in-out;
+}
+
+.admin-layout {
+  display: flex;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.admin-sidebar {
+  background-color: var(--sidebar-bg);
+  color: var(--text-color);
+  border-right: 1px solid var(--border-color);
+}
+
+.admin-main {
+  flex-grow: 1;
+  background-color: var(--bg-color);
+}
+
+.resident-page,
+.resident-form,
+.resident-table {
+  background-color: var(--card-bg);
+  color: var(--text-color);
+  transition: all 0.3s ease;
+}
+
+/* .btn-save,
+.btn-cancel,
+.btn-delete,
+.btn-edit {
+  background-color: var(--primary-color);
+  color: #fff;
+  border: none;
+  transition: 0.2s;
+}
+
+.btn-save:hover,
+.btn-edit:hover,
+.btn-delete:hover {
+  background-color: var(--accent-color);
+} */

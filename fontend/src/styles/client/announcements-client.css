@@ -56,7 +56,7 @@
 }
 
 .announcement-card {
-  background: #fff;
+  background: linear-gradient(to bottom, #e3ebf6, #ffffff);
   border-radius: 12px;
   padding: 1rem 1.2rem;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
