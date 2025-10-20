@@ -14,7 +14,7 @@ const AboutPage = () => {
         <nav>
           <Link to="/about" className="active">Giới thiệu</Link>
           <a href="#features">Tính năng</a>
-          <a href="#contact">Liên hệ</a>
+          <a href="/contact">Liên hệ</a>
           <Link to="/login" className="login-open-btn">Đăng nhập</Link>
         </nav>
       </header>

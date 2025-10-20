@@ -38,6 +38,7 @@ import Support from "./pages/Resident/Support";
 
 // 🌟 Public pages
 import AboutPage from "./pages/Resident/AboutPage";
+import ContactPage from "./pages/Resident/ContactPage";
 
 // ✅ Hiệu ứng fade chuyển trang
 const pageTransition = {
@@ -152,6 +153,8 @@ function App() {
 
             {/* 🌟 Trang công khai */}
             <Route path="/about" element={<AboutPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+
 
             {/* ⚠️ Fallback */}
             <Route path="/unauthorized" element={<UnauthorizedPage />} />
