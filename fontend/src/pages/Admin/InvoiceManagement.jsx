@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -14,6 +15,8 @@ const InvoiceManagement = () => {
   const [loading, setLoading] = useState(true);
   const [currentInvoice, setCurrentInvoice] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [formData, setFormData] = useState({
     apartment: "",
     type: "management_fee",
@@ -21,6 +24,16 @@ const InvoiceManagement = () => {
     dueDate: "",
     status: "unpaid",
     period: "",
+  });
+
+  // State cho validation errors
+  const [errors, setErrors] = useState({
+    apartment: "",
+    type: "",
+    amount: "",
+    period: "",
+    dueDate: "",
+    status: "",
   });
 
   // 📦 Lấy danh sách hóa đơn
@@ -57,10 +70,131 @@ const InvoiceManagement = () => {
     }
   }, [user, searchTerm]);
 
-  // 📝 Xử lý form
+  // Reset to page 1 when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // 🎯 Validation function
+  const validateForm = () => {
+    const newErrors = {
+      apartment: "",
+      type: "",
+      amount: "",
+      period: "",
+      dueDate: "",
+      status: "",
+    };
+
+    let isValid = true;
+
+    // Validate apartment
+    if (!formData.apartment) {
+      newErrors.apartment = "Vui lòng chọn căn hộ";
+      isValid = false;
+    }
+
+    // Validate amount
+    if (!formData.amount) {
+      newErrors.amount = "Số tiền không được để trống";
+      isValid = false;
+    } else if (Number(formData.amount) <= 0) {
+      newErrors.amount = "Số tiền phải lớn hơn 0";
+      isValid = false;
+    } else if (Number(formData.amount) > 100000000) {
+      newErrors.amount = "Số tiền không được vượt quá 100,000,000 VND";
+      isValid = false;
+    }
+
+    // Validate period (format: YYYY-MM)
+    if (!formData.period) {
+      newErrors.period = "Kỳ hóa đơn không được để trống";
+      isValid = false;
+    } else {
+      const periodRegex = /^\d{4}-(0[1-9]|1[0-2])$/;
+      if (!periodRegex.test(formData.period)) {
+        newErrors.period = "Định dạng kỳ không hợp lệ (VD: 2025-10)";
+        isValid = false;
+      } else {
+        const [year, month] = formData.period.split('-');
+        const inputDate = new Date(Number(year), Number(month) - 1);
+        const currentDate = new Date();
+        
+        if (inputDate > currentDate) {
+          newErrors.period = "Kỳ hóa đơn không được ở tương lai";
+          isValid = false;
+        }
+      }
+    }
+
+    // Validate due date
+    if (!formData.dueDate) {
+      newErrors.dueDate = "Ngày hết hạn không được để trống";
+      isValid = false;
+    } else {
+      const dueDate = new Date(formData.dueDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (dueDate < today) {
+        newErrors.dueDate = "Ngày hết hạn không được ở quá khứ";
+        isValid = false;
+      }
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  // 📝 Xử lý thay đổi input với real-time validation
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+
+    // Clear error khi user bắt đầu nhập
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+
+    // Real-time validation cho amount
+    if (name === "amount" && value) {
+      if (Number(value) <= 0) {
+        setErrors((prev) => ({ 
+          ...prev, 
+          amount: "Số tiền phải lớn hơn 0" 
+        }));
+      } else if (Number(value) > 100000000) {
+        setErrors((prev) => ({ 
+          ...prev, 
+          amount: "Số tiền không được vượt quá 100,000,000 VND" 
+        }));
+      }
+    }
+
+    // Real-time validation cho period
+    if (name === "period" && value) {
+      const periodRegex = /^\d{4}-(0[1-9]|1[0-2])$/;
+      if (!periodRegex.test(value)) {
+        setErrors((prev) => ({ 
+          ...prev, 
+          period: "Định dạng kỳ không hợp lệ (VD: 2025-10)" 
+        }));
+      }
+    }
+
+    // Real-time validation cho due date
+    if (name === "dueDate" && value) {
+      const dueDate = new Date(value);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (dueDate < today) {
+        setErrors((prev) => ({ 
+          ...prev, 
+          dueDate: "Ngày hết hạn không được ở quá khứ" 
+        }));
+      }
+    }
   };
 
   const resetForm = () => {
@@ -73,11 +207,26 @@ const InvoiceManagement = () => {
       status: "unpaid",
       period: "",
     });
+    setErrors({
+      apartment: "",
+      type: "",
+      amount: "",
+      period: "",
+      dueDate: "",
+      status: "",
+    });
   };
 
   // 💾 Thêm hoặc sửa hóa đơn
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate form trước khi submit
+    if (!validateForm()) {
+      toast.error("⚠️ Vui lòng kiểm tra lại thông tin trong form!");
+      return;
+    }
+
     try {
       const [yearStr, monthStr] = formData.period.split("-");
       const invoiceData = {
@@ -169,9 +318,61 @@ const InvoiceManagement = () => {
       status: invoice.status,
       period: periodValue,
     });
+    // Clear errors khi bắt đầu edit
+    setErrors({
+      apartment: "",
+      type: "",
+      amount: "",
+      period: "",
+      dueDate: "",
+      status: "",
+    });
     toast.info("✏️ Đang chỉnh sửa hóa đơn");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  // Pagination calculations
+  const totalPages = Math.ceil(invoices.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentInvoices = invoices.slice(startIndex, startIndex + itemsPerPage);
+
+  // Pagination handlers
+  const goToPage = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const goToPreviousPage = () => {
+    setCurrentPage(prev => Math.max(prev - 1, 1));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const goToNextPage = () => {
+    setCurrentPage(prev => Math.min(prev + 1, totalPages));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    
+    return pages;
+  };
+
+  const pageNumbers = getPageNumbers();
+  const showPagination = !loading && invoices.length > 0;
 
   return (
     <div className="resident-page">
@@ -186,6 +387,7 @@ const InvoiceManagement = () => {
               name="apartment"
               value={formData.apartment}
               onChange={handleChange}
+              className={errors.apartment ? "error" : ""}
               required
             >
               <option value="">-- Chọn căn hộ --</option>
@@ -195,11 +397,16 @@ const InvoiceManagement = () => {
                 </option>
               ))}
             </select>
+            {errors.apartment && <span className="error-message">{errors.apartment}</span>}
           </div>
 
           <div className="form-group">
             <label>Loại hóa đơn *</label>
-            <select name="type" value={formData.type} onChange={handleChange}>
+            <select 
+              name="type" 
+              value={formData.type} 
+              onChange={handleChange}
+            >
               <option value="management_fee">Phí quản lý</option>
               <option value="water">Tiền nước</option>
               <option value="electricity">Tiền điện</option>
@@ -208,14 +415,24 @@ const InvoiceManagement = () => {
           </div>
 
           <div className="form-group">
-            <label>Số tiền (VND)</label>
+            <label>Số tiền (VND) *</label>
             <input
               type="number"
               name="amount"
               value={formData.amount}
               onChange={handleChange}
+              className={errors.amount ? "error" : ""}
+              placeholder="Nhập số tiền..."
+              min="1"
+              max="100000000"
               required
             />
+            {errors.amount && <span className="error-message">{errors.amount}</span>}
+            {formData.amount && !errors.amount && (
+              <div className="amount-preview">
+                {new Intl.NumberFormat("vi-VN").format(Number(formData.amount))} ₫
+              </div>
+            )}
           </div>
 
           <div className="form-group">
@@ -225,9 +442,13 @@ const InvoiceManagement = () => {
               name="period"
               value={formData.period}
               onChange={handleChange}
+              className={errors.period ? "error" : ""}
               placeholder="VD: 2025-10"
+              maxLength="7"
               required
             />
+            {errors.period && <span className="error-message">{errors.period}</span>}
+            <div className="input-hint">Định dạng: NĂM-THÁNG (VD: 2025-10)</div>
           </div>
 
           <div className="form-group">
@@ -237,8 +458,11 @@ const InvoiceManagement = () => {
               name="dueDate"
               value={formData.dueDate}
               onChange={handleChange}
+              className={errors.dueDate ? "error" : ""}
+              min={new Date().toISOString().split('T')[0]}
               required
             />
+            {errors.dueDate && <span className="error-message">{errors.dueDate}</span>}
           </div>
 
           <div className="form-group">
@@ -278,6 +502,15 @@ const InvoiceManagement = () => {
         />
       </div>
 
+      {/* Thông tin tổng quan */}
+      {!loading && invoices.length > 0 && (
+        <div className="resident-summary">
+          Hiển thị {Math.min(startIndex + 1, invoices.length)}-
+          {Math.min(startIndex + currentInvoices.length, invoices.length)} 
+          trên tổng số {invoices.length} hóa đơn
+        </div>
+      )}
+
       {/* Bảng danh sách hóa đơn */}
       <div className="resident-table">
         <table>
@@ -293,14 +526,20 @@ const InvoiceManagement = () => {
             </tr>
           </thead>
           <tbody>
-            {invoices.length === 0 ? (
+            {loading ? (
               <tr>
                 <td colSpan="7" className="no-data">
-                  Không có dữ liệu
+                  <div className="loading-spinner">Đang tải dữ liệu...</div>
+                </td>
+              </tr>
+            ) : currentInvoices.length === 0 ? (
+              <tr>
+                <td colSpan="7" className="no-data">
+                  {searchTerm ? "Không tìm thấy hóa đơn phù hợp" : "Không có dữ liệu hóa đơn"}
                 </td>
               </tr>
             ) : (
-              invoices.map((inv) => (
+              currentInvoices.map((inv) => (
                 <tr key={inv._id}>
                   <td>{inv.apartment?.apartmentCode || "N/A"}</td>
                   <td>
@@ -350,6 +589,41 @@ const InvoiceManagement = () => {
             )}
           </tbody>
         </table>
+
+        {/* Pagination Component */}
+        {showPagination && (
+          <div className="resident-pagination">
+            <button
+              className="pagination-btn"
+              onClick={goToPreviousPage}
+              disabled={currentPage === 1}
+            >
+              <FaChevronLeft />
+            </button>
+
+            {pageNumbers.map(page => (
+              <button
+                key={page}
+                className={`pagination-btn ${currentPage === page ? 'active' : ''}`}
+                onClick={() => goToPage(page)}
+              >
+                {page}
+              </button>
+            ))}
+
+            <button
+              className="pagination-btn"
+              onClick={goToNextPage}
+              disabled={currentPage === totalPages}
+            >
+              <FaChevronRight />
+            </button>
+
+            <span className="pagination-info">
+              Trang {currentPage} / {totalPages}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

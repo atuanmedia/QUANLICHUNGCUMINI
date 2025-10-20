@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEye, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext";
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
@@ -13,6 +14,8 @@ const ReportManagement = () => {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // Hiển thị 10 phản ánh/trang
 
   // 🔒 Escape HTML để tránh lỗi hiển thị HTML trong popup
   const escapeHtml = (unsafe) =>
@@ -33,7 +36,8 @@ const ReportManagement = () => {
         params: { status: filterStatus === "all" ? "" : filterStatus },
       });
       setReports(data);
-      toast.success(`📋 Đã tải ${data.length} phản ánh thành công!`);
+      console.log("📊 Dữ liệu phản ánh:", data);
+      console.log("🔢 Số lượng phản ánh:", data?.length || 0);
     } catch (err) {
       console.error("❌ Lỗi tải phản ánh:", err);
       toast.error("Không thể tải danh sách phản ánh!");
@@ -45,6 +49,11 @@ const ReportManagement = () => {
   useEffect(() => {
     if (user?.role === "admin") fetchReports();
   }, [user, filterStatus]);
+
+  // Reset to page 1 when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterStatus]);
 
   // 👁️ Xem chi tiết phản ánh (popup đẹp + fix lỗi không đóng được)
   const handleViewDetail = (report) => {
@@ -115,6 +124,70 @@ const ReportManagement = () => {
     }
   };
 
+  // Pagination calculations
+  const totalPages = Math.ceil(reports.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentReports = reports.slice(startIndex, startIndex + itemsPerPage);
+
+  console.log("📄 Pagination Info:", {
+    totalReports: reports.length,
+    itemsPerPage,
+    totalPages,
+    currentPage,
+    startIndex,
+    endIndex: startIndex + itemsPerPage,
+    currentReportsCount: currentReports.length
+  });
+
+  // Pagination handlers
+  const goToPage = (page) => {
+    console.log("🔄 Chuyển đến trang:", page);
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const goToPreviousPage = () => {
+    setCurrentPage(prev => Math.max(prev - 1, 1));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const goToNextPage = () => {
+    setCurrentPage(prev => Math.min(prev + 1, totalPages));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    // Adjust start page if we're near the end
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    
+    console.log("🔢 Số trang hiển thị:", pages);
+    return pages;
+  };
+
+  const pageNumbers = getPageNumbers();
+  // Luôn hiển thị pagination khi có dữ liệu, kể cả chỉ có 1 trang
+  const showPagination = !loading && reports.length > 0;
+
+  console.log("🎯 Điều kiện hiển thị pagination:", {
+    loading,
+    reportsCount: reports.length,
+    totalPages,
+    showPagination
+  });
+
   if (loading)
     return (
       <div className="loading-overlay">
@@ -142,6 +215,16 @@ const ReportManagement = () => {
         </select>
       </div>
 
+      {/* Thông tin tổng quan */}
+      {!loading && reports.length > 0 && (
+        <div className="resident-summary">
+          Hiển thị {Math.min(startIndex + 1, reports.length)}-
+          {Math.min(startIndex + currentReports.length, reports.length)} 
+          trên tổng số {reports.length} phản ánh
+          {filterStatus !== "all" && ` (Đã lọc theo: ${getStatusLabel(filterStatus)})`}
+        </div>
+      )}
+
       {/* Bảng phản ánh */}
       <div className="resident-table animate-fade">
         <table>
@@ -156,16 +239,18 @@ const ReportManagement = () => {
             </tr>
           </thead>
           <tbody>
-            {reports.length === 0 ? (
+            {currentReports.length === 0 ? (
               <tr>
                 <td colSpan="6" className="no-data">
-                  Không có phản ánh nào
+                  {filterStatus === "all" 
+                    ? "Không có phản ánh nào" 
+                    : `Không có phản ánh nào với trạng thái "${getStatusLabel(filterStatus)}"`}
                 </td>
               </tr>
             ) : (
-              reports.map((r) => (
+              currentReports.map((r) => (
                 <tr key={r._id}>
-                  <td>{r.title}</td>
+                  <td className="report-title">{r.title}</td>
                   <td>{r.resident?.fullName || "N/A"}</td>
                   <td>{r.apartment?.apartmentCode || "N/A"}</td>
                   <td>{new Date(r.createdAt).toLocaleDateString("vi-VN")}</td>
@@ -181,13 +266,7 @@ const ReportManagement = () => {
                           : "badge-yellow"
                       }`}
                     >
-                      {r.status === "pending"
-                        ? "Chờ xử lý"
-                        : r.status === "in_progress"
-                        ? "Đang xử lý"
-                        : r.status === "resolved"
-                        ? "Đã giải quyết"
-                        : "Đã hủy"}
+                      {getStatusLabel(r.status)}
                     </span>
                   </td>
                   <td className="action-buttons">
@@ -211,9 +290,55 @@ const ReportManagement = () => {
             )}
           </tbody>
         </table>
+
+        {/* Pagination Component - LUÔN HIỂN THỊ KHI CÓ DỮ LIỆU */}
+        {showPagination && (
+          <div className="resident-pagination">
+            <button
+              className="pagination-btn"
+              onClick={goToPreviousPage}
+              disabled={currentPage === 1}
+            >
+              <FaChevronLeft />
+            </button>
+
+            {pageNumbers.map(page => (
+              <button
+                key={page}
+                className={`pagination-btn ${currentPage === page ? 'active' : ''}`}
+                onClick={() => goToPage(page)}
+              >
+                {page}
+              </button>
+            ))}
+
+            <button
+              className="pagination-btn"
+              onClick={goToNextPage}
+              disabled={currentPage === totalPages}
+            >
+              <FaChevronRight />
+            </button>
+
+            <span className="pagination-info">
+              Trang {currentPage} / {totalPages}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
+
+  // Helper function to get status label
+  function getStatusLabel(status) {
+    switch (status) {
+      case "pending": return "Chờ xử lý";
+      case "in_progress": return "Đang xử lý";
+      case "resolved": return "Đã giải quyết";
+      case "cancelled": return "Đã hủy";
+      default: return status;
+    }
+  }
 };
 
 export default ReportManagement;

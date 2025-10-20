@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import api from "../../api/api";
 import { PlusIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -12,6 +13,8 @@ const ApartmentManagement = () => {
   const [error, setError] = useState(null);
   const [currentApartment, setCurrentApartment] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // Hiển thị 10 căn hộ/trang
 
   const [formData, setFormData] = useState({
     apartmentCode: "",
@@ -31,6 +34,8 @@ const ApartmentManagement = () => {
         params: { search: searchTerm },
       });
       setApartments(data);
+      console.log("📊 Dữ liệu căn hộ:", data);
+      console.log("🔢 Số lượng căn hộ:", data?.length || 0);
     } catch (err) {
       console.error("Error fetching apartments:", err);
       setError("Không thể tải danh sách căn hộ.");
@@ -42,6 +47,11 @@ const ApartmentManagement = () => {
 
   useEffect(() => {
     fetchApartments();
+  }, [searchTerm]);
+
+  // Reset to page 1 when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
   }, [searchTerm]);
 
   // 📌 Xử lý thay đổi input
@@ -141,6 +151,70 @@ const ApartmentManagement = () => {
     toast.info("✏️ Đang chỉnh sửa thông tin căn hộ");
   };
 
+  // Pagination calculations
+  const totalPages = Math.ceil(apartments.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentApartments = apartments.slice(startIndex, startIndex + itemsPerPage);
+
+  console.log("📄 Pagination Info:", {
+    totalApartments: apartments.length,
+    itemsPerPage,
+    totalPages,
+    currentPage,
+    startIndex,
+    endIndex: startIndex + itemsPerPage,
+    currentApartmentsCount: currentApartments.length
+  });
+
+  // Pagination handlers
+  const goToPage = (page) => {
+    console.log("🔄 Chuyển đến trang:", page);
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const goToPreviousPage = () => {
+    setCurrentPage(prev => Math.max(prev - 1, 1));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const goToNextPage = () => {
+    setCurrentPage(prev => Math.min(prev + 1, totalPages));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    // Adjust start page if we're near the end
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    
+    console.log("🔢 Số trang hiển thị:", pages);
+    return pages;
+  };
+
+  const pageNumbers = getPageNumbers();
+  // Luôn hiển thị pagination khi có dữ liệu, kể cả chỉ có 1 trang
+  const showPagination = !loading && apartments.length > 0;
+
+  console.log("🎯 Điều kiện hiển thị pagination:", {
+    loading,
+    apartmentsCount: apartments.length,
+    totalPages,
+    showPagination
+  });
+
   return (
     <div className="resident-page">
       <h2 className="resident-title">🏢 Quản lý Căn hộ</h2>
@@ -235,6 +309,15 @@ const ApartmentManagement = () => {
         />
       </div>
 
+      {/* Thông tin tổng quan */}
+      {!loading && apartments.length > 0 && (
+        <div className="resident-summary">
+          Hiển thị {Math.min(startIndex + 1, apartments.length)}-
+          {Math.min(startIndex + currentApartments.length, apartments.length)} 
+          trên tổng số {apartments.length} căn hộ
+        </div>
+      )}
+
       {/* Bảng danh sách căn hộ */}
       <div className="resident-table">
         <table>
@@ -249,14 +332,20 @@ const ApartmentManagement = () => {
             </tr>
           </thead>
           <tbody>
-            {apartments.length === 0 ? (
+            {loading ? (
               <tr>
                 <td colSpan="6" className="no-data">
-                  Không có dữ liệu
+                  <div className="loading-spinner">Đang tải dữ liệu...</div>
+                </td>
+              </tr>
+            ) : currentApartments.length === 0 ? (
+              <tr>
+                <td colSpan="6" className="no-data">
+                  {searchTerm ? "Không tìm thấy căn hộ phù hợp" : "Không có dữ liệu căn hộ"}
                 </td>
               </tr>
             ) : (
-              apartments.map((apt) => (
+              currentApartments.map((apt) => (
                 <tr key={apt._id}>
                   <td>{apt.apartmentCode}</td>
                   <td>{apt.name}</td>
@@ -290,6 +379,41 @@ const ApartmentManagement = () => {
             )}
           </tbody>
         </table>
+
+        {/* Pagination Component - LUÔN HIỂN THỊ KHI CÓ DỮ LIỆU */}
+        {showPagination && (
+          <div className="resident-pagination">
+            <button
+              className="pagination-btn"
+              onClick={goToPreviousPage}
+              disabled={currentPage === 1}
+            >
+              <FaChevronLeft />
+            </button>
+
+            {pageNumbers.map(page => (
+              <button
+                key={page}
+                className={`pagination-btn ${currentPage === page ? 'active' : ''}`}
+                onClick={() => goToPage(page)}
+              >
+                {page}
+              </button>
+            ))}
+
+            <button
+              className="pagination-btn"
+              onClick={goToNextPage}
+              disabled={currentPage === totalPages}
+            >
+              <FaChevronRight />
+            </button>
+
+            <span className="pagination-info">
+              Trang {currentPage} / {totalPages}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

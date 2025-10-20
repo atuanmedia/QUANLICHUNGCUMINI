@@ -60,9 +60,9 @@ const DashboardResident = () => {
       </p>
 
       <ul className="resident-feature-list">
-        <li>📢 Xem thông báo mới nhất từ ban quản lý.</li>
-        <li>💰 Kiểm tra và thanh toán hóa đơn điện nước.</li>
-        <li>🧾 Gửi và theo dõi báo cáo/sự cố của căn hộ.</li>
+        <li>📢 <a href="/announcements">Xem thông báo mới nhất từ ban quản lý.</a></li>
+        <li>💰 <a href="/invoices">Kiểm tra và thanh toán hóa đơn điện nước.</a></li>
+        <li>🧾 <a href="/reports">Gửi và theo dõi báo cáo/sự cố của căn hộ.</a></li>
       </ul>
 
       <div className="resident-card-container">
@@ -97,8 +97,8 @@ const DashboardResident = () => {
             {resident?.apartment?.status === "occupied"
               ? "Đang ở"
               : resident?.apartment?.status === "empty"
-              ? "Trống"
-              : "—"}
+                ? "Trống"
+                : "—"}
           </p>
         </div>
 

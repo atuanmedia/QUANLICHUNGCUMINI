@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { PlusIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext";
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
@@ -13,10 +14,19 @@ const AnnouncementManagement = () => {
   const [apartments, setApartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [formData, setFormData] = useState({
     title: "",
     content: "",
     scope: "system",
+    targetApartment: "",
+  });
+  
+  // State cho validation errors
+  const [errors, setErrors] = useState({
+    title: "",
+    content: "",
     targetApartment: "",
   });
 
@@ -51,13 +61,64 @@ const AnnouncementManagement = () => {
     }
   }, [user]);
 
+  // 🎯 Validation function
+  const validateForm = () => {
+    const newErrors = {
+      title: "",
+      content: "",
+      targetApartment: "",
+    };
+
+    let isValid = true;
+
+    // Validate title
+    if (!formData.title.trim()) {
+      newErrors.title = "Tiêu đề không được để trống";
+      isValid = false;
+    } else if (formData.title.length < 5) {
+      newErrors.title = "Tiêu đề phải có ít nhất 5 ký tự";
+      isValid = false;
+    } else if (formData.title.length > 100) {
+      newErrors.title = "Tiêu đề không được vượt quá 100 ký tự";
+      isValid = false;
+    }
+
+    // Validate content
+    if (!formData.content.trim()) {
+      newErrors.content = "Nội dung không được để trống";
+      isValid = false;
+    } else if (formData.content.length < 10) {
+      newErrors.content = "Nội dung phải có ít nhất 10 ký tự";
+      isValid = false;
+    } else if (formData.content.length > 1000) {
+      newErrors.content = "Nội dung không được vượt quá 1000 ký tự";
+      isValid = false;
+    }
+
+    // Validate target apartment when scope is apartment
+    if (formData.scope === "apartment" && !formData.targetApartment) {
+      newErrors.targetApartment = "Vui lòng chọn căn hộ";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
   // 🧾 Gửi form (tạo hoặc sửa)
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate form trước khi submit
+    if (!validateForm()) {
+      toast.error("⚠️ Vui lòng kiểm tra lại thông tin trong form!");
+      return;
+    }
+
     try {
       const payload = {
-        title: formData.title,
-        content: formData.content,
+        title: formData.title.trim(),
+        content: formData.content.trim(),
         scope: formData.scope,
         targetApartment:
           formData.scope === "apartment" ? formData.targetApartment : null,
@@ -78,6 +139,11 @@ const AnnouncementManagement = () => {
         scope: "system",
         targetApartment: "",
       });
+      setErrors({
+        title: "",
+        content: "",
+        targetApartment: "",
+      });
       setIsEditing(false);
       fetchAnnouncements();
     } catch (err) {
@@ -86,10 +152,42 @@ const AnnouncementManagement = () => {
     }
   };
 
+  // 📋 Xử lý thay đổi input với real-time validation
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Clear error khi user bắt đầu nhập
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+
+    // Real-time validation cho một số trường
+    if (name === "title" && value.length > 100) {
+      setErrors((prev) => ({ 
+        ...prev, 
+        title: "Tiêu đề không được vượt quá 100 ký tự" 
+      }));
+    }
+
+    if (name === "content" && value.length > 1000) {
+      setErrors((prev) => ({ 
+        ...prev, 
+        content: "Nội dung không được vượt quá 1000 ký tự" 
+      }));
+    }
+  };
+
   // ✏️ Sửa
   const handleEdit = (item) => {
     setFormData(item);
     setIsEditing(true);
+    // Clear errors khi bắt đầu edit
+    setErrors({
+      title: "",
+      content: "",
+      targetApartment: "",
+    });
     toast.info("✏️ Đang chỉnh sửa thông báo...");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -127,11 +225,64 @@ const AnnouncementManagement = () => {
     }
   };
 
-  // 📋 Xử lý thay đổi input
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  // Hàm reset form
+  const handleReset = () => {
+    setFormData({
+      title: "",
+      content: "",
+      scope: "system",
+      targetApartment: "",
+    });
+    setErrors({
+      title: "",
+      content: "",
+      targetApartment: "",
+    });
+    setIsEditing(false);
   };
+
+  // Pagination calculations
+  const totalPages = Math.ceil(announcements.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentAnnouncements = announcements.slice(startIndex, startIndex + itemsPerPage);
+
+  // Pagination handlers
+  const goToPage = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const goToPreviousPage = () => {
+    setCurrentPage(prev => Math.max(prev - 1, 1));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const goToNextPage = () => {
+    setCurrentPage(prev => Math.min(prev + 1, totalPages));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    
+    return pages;
+  };
+
+  const pageNumbers = getPageNumbers();
+  const showPagination = !loading && announcements.length > 0;
 
   if (loading)
     return (
@@ -155,8 +306,14 @@ const AnnouncementManagement = () => {
               name="title"
               value={formData.title}
               onChange={handleChange}
+              className={errors.title ? "error" : ""}
+              placeholder="Nhập tiêu đề thông báo..."
               required
             />
+            {errors.title && <span className="error-message">{errors.title}</span>}
+            <div className="character-count">
+              {formData.title.length}/100 ký tự
+            </div>
           </div>
 
           <div className="form-group">
@@ -174,6 +331,7 @@ const AnnouncementManagement = () => {
                 name="targetApartment"
                 value={formData.targetApartment}
                 onChange={handleChange}
+                className={errors.targetApartment ? "error" : ""}
                 required
               >
                 <option value="">-- Chọn căn hộ --</option>
@@ -183,6 +341,9 @@ const AnnouncementManagement = () => {
                   </option>
                 ))}
               </select>
+              {errors.targetApartment && (
+                <span className="error-message">{errors.targetApartment}</span>
+              )}
             </div>
           )}
         </div>
@@ -194,8 +355,14 @@ const AnnouncementManagement = () => {
             rows="4"
             value={formData.content}
             onChange={handleChange}
+            className={errors.content ? "error" : ""}
+            placeholder="Nhập nội dung thông báo chi tiết..."
             required
           ></textarea>
+          {errors.content && <span className="error-message">{errors.content}</span>}
+          <div className="character-count">
+            {formData.content.length}/1000 ký tự
+          </div>
         </div>
 
         <div className="modal-footer">
@@ -206,21 +373,22 @@ const AnnouncementManagement = () => {
             <button
               type="button"
               className="btn-cancel"
-              onClick={() => {
-                setFormData({
-                  title: "",
-                  content: "",
-                  scope: "system",
-                  targetApartment: "",
-                });
-                setIsEditing(false);
-              }}
+              onClick={handleReset}
             >
               Hủy
             </button>
           )}
         </div>
       </form>
+
+      {/* Thông tin tổng quan */}
+      {!loading && announcements.length > 0 && (
+        <div className="resident-summary">
+          Hiển thị {Math.min(startIndex + 1, announcements.length)}-
+          {Math.min(startIndex + currentAnnouncements.length, announcements.length)} 
+          trên tổng số {announcements.length} thông báo
+        </div>
+      )}
 
       {/* 🗂️ Danh sách thông báo */}
       <div className="resident-table animate-fade">
@@ -236,14 +404,14 @@ const AnnouncementManagement = () => {
             </tr>
           </thead>
           <tbody>
-            {announcements.length === 0 ? (
+            {currentAnnouncements.length === 0 ? (
               <tr>
                 <td colSpan="6" className="no-data">
                   Không có thông báo nào
                 </td>
               </tr>
             ) : (
-              announcements.map((a) => (
+              currentAnnouncements.map((a) => (
                 <tr key={a._id}>
                   <td>{a.title}</td>
                   <td>
@@ -276,6 +444,41 @@ const AnnouncementManagement = () => {
             )}
           </tbody>
         </table>
+
+        {/* Pagination Component */}
+        {showPagination && (
+          <div className="resident-pagination">
+            <button
+              className="pagination-btn"
+              onClick={goToPreviousPage}
+              disabled={currentPage === 1}
+            >
+              <FaChevronLeft />
+            </button>
+
+            {pageNumbers.map(page => (
+              <button
+                key={page}
+                className={`pagination-btn ${currentPage === page ? 'active' : ''}`}
+                onClick={() => goToPage(page)}
+              >
+                {page}
+              </button>
+            ))}
+
+            <button
+              className="pagination-btn"
+              onClick={goToNextPage}
+              disabled={currentPage === totalPages}
+            >
+              <FaChevronRight />
+            </button>
+
+            <span className="pagination-info">
+              Trang {currentPage} / {totalPages}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
