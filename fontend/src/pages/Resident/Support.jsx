@@ -1,13 +1,16 @@
 import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { io } from "socket.io-client";
+import { useAuth } from "../../context/AuthContext"; // ✅ Lấy user từ AuthContext
 import "../../styles/client/support.css";
 
+// ⚙️ Domain backend
 const API_BASE_URL =
   window.location.hostname === "localhost"
     ? "http://localhost:5000"
     : "https://quanlichungcumini.onrender.com";
 
+// ⚙️ Socket cấu hình ổn định
 const socket = io(API_BASE_URL, {
   transports: ["websocket", "polling"],
   reconnection: true,
@@ -17,35 +20,42 @@ const socket = io(API_BASE_URL, {
 
 const formatTime = (dateStr) => {
   const date = new Date(dateStr);
-  return date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+  return date.toLocaleTimeString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 };
 
 const Support = () => {
+  const { user, loading } = useAuth(); // ✅ Dùng AuthContext
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const chatEndRef = useRef(null);
 
-  const user = JSON.parse(localStorage.getItem("user")) || {
-    _id: "guest",
-    name: "Khách",
-    apartmentCode: "N/A",
-  };
-
-  // 🧩 Load lịch sử
+  // 🧩 Load lịch sử chat
   useEffect(() => {
     const fetchHistory = async () => {
+      if (loading) return; // ⏳ Chờ AuthContext load xong
+      if (!user || !user._id) {
+        console.warn("⚠️ Không có user hợp lệ, bỏ qua tải lịch sử chat");
+        return;
+      }
+
       try {
         const res = await axios.get(`${API_BASE_URL}/api/chat/${user._id}`);
-        setMessages(res.data || []);
+        setMessages(Array.isArray(res.data) ? res.data : []);
       } catch (err) {
         console.error("❌ Lỗi tải lịch sử chat:", err.message);
       }
     };
-    fetchHistory();
-  }, []);
 
-  // 🔗 Kết nối socket
+    fetchHistory();
+  }, [user, loading]);
+
+  // 🔗 Kết nối socket khi có user
   useEffect(() => {
+    if (!user || !user._id) return;
+
     socket.emit("resident_join", {
       _id: user._id,
       fullName: user.name,
@@ -59,15 +69,17 @@ const Support = () => {
     });
 
     return () => socket.off("receive_message");
-  }, []);
+  }, [user]);
 
+  // 🔁 Auto scroll
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // ✉️ Gửi tin nhắn
   const handleSend = (e) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || !user?._id) return;
 
     const newMsg = {
       sender: "resident",
@@ -97,7 +109,9 @@ const Support = () => {
                   <strong>{m.sender === "resident" ? "Bạn" : "Admin"}:</strong>{" "}
                   {m.content}
                 </div>
-                <span className="time">{formatTime(m.createdAt || m.timestamp)}</span>
+                <span className="time">
+                  {formatTime(m.createdAt || m.timestamp)}
+                </span>
               </div>
             </div>
           ))}
@@ -115,6 +129,7 @@ const Support = () => {
         </form>
       </section>
 
+      {/* Thông tin BQL */}
       <aside className="info-section">
         <h3 className="section-title">📍 Ban Quản Lý Chung Cư</h3>
         <div className="info-card">

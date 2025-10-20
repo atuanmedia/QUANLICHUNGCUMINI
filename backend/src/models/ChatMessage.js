@@ -6,6 +6,14 @@ const chatMessageSchema = new mongoose.Schema({
     enum: ["resident", "admin"],
     required: true,
   },
+  senderId: {
+    type: String,
+    required: true,
+  },
+  receiverId: {
+    type: String,
+    required: true,
+  },
   content: {
     type: String,
     required: true,
