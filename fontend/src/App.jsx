@@ -26,6 +26,7 @@ import AnnouncementManagement from "./pages/Admin/AnnouncementManagement";
 import InvoiceManagement from "./pages/Admin/InvoiceManagement";
 import ReportManagement from "./pages/Admin/ReportManagement";
 import TempResidenceAdmin from "./pages/Admin/TempResidenceAdmin";
+import ChatSupport from "./pages/Admin/ChatSupport";
 
 // 🏠 Resident pages
 import DashboardResident from "./pages/Resident/DashboardResident";
@@ -129,6 +130,7 @@ function App() {
               <Route path="invoices" element={<InvoiceManagement />} />
               <Route path="reports" element={<ReportManagement />} />
               <Route path="temp-residence" element={<TempResidenceAdmin />} />
+              <Route path="/admin/chat-support" element={<ChatSupport />} />
             </Route>
 
             {/* 🏠 Resident routes */}

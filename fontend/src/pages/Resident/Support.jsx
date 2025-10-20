@@ -1,96 +1,109 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useEffect, useState, useRef } from "react";
+import axios from "axios";
 import { io } from "socket.io-client";
 import "../../styles/client/support.css";
 
-// ✅ Socket kết nối tới backend (thay domain nếu cần)
-const socket = io("https://quanlichungcumini.onrender.com");
+const API_BASE_URL =
+  window.location.hostname === "localhost"
+    ? "http://localhost:5000"
+    : "https://quanlichungcumini.onrender.com";
+
+const socket = io(API_BASE_URL, {
+  transports: ["websocket", "polling"],
+  reconnection: true,
+  reconnectionAttempts: 5,
+  reconnectionDelay: 2000,
+});
+
+const formatTime = (dateStr) => {
+  const date = new Date(dateStr);
+  return date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+};
 
 const Support = () => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const chatEndRef = useRef(null);
 
-  // 🔗 Kết nối socket và nhận tin nhắn realtime
-  useEffect(() => {
-    socket.on("connect", () => console.log("✅ Kết nối thành công tới server socket"));
-    socket.on("disconnect", () => console.log("❌ Mất kết nối socket"));
+  const user = JSON.parse(localStorage.getItem("user")) || {
+    _id: "guest",
+    name: "Khách",
+    apartmentCode: "N/A",
+  };
 
-    // 📥 Nhận tin nhắn realtime
-    socket.on("receive_message", (data) => {
-      setMessages((prev) => [...prev, data]);
-    });
-
-    return () => socket.disconnect();
-  }, []);
-
-  // 📜 Lấy lịch sử tin nhắn từ backend (nếu có API)
+  // 🧩 Load lịch sử
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const res = await fetch("https://quanlichungcumini.onrender.com/api/chat");
-        const data = await res.json();
-        setMessages(data);
+        const res = await axios.get(`${API_BASE_URL}/api/chat/${user._id}`);
+        setMessages(res.data || []);
       } catch (err) {
-        console.warn("⚠️ Không thể tải lịch sử chat:", err.message);
+        console.error("❌ Lỗi tải lịch sử chat:", err.message);
       }
     };
     fetchHistory();
   }, []);
 
-  // 🔽 Tự động scroll xuống cuối khi có tin mới
+  // 🔗 Kết nối socket
+  useEffect(() => {
+    socket.emit("resident_join", {
+      _id: user._id,
+      fullName: user.name,
+      apartmentCode: user.apartmentCode,
+    });
+
+    socket.on("receive_message", (msg) => {
+      if (msg.receiverId === user._id || msg.sender === "admin") {
+        setMessages((prev) => [...prev, msg]);
+      }
+    });
+
+    return () => socket.off("receive_message");
+  }, []);
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // ✉️ Gửi tin nhắn
   const handleSend = (e) => {
     e.preventDefault();
     if (!input.trim()) return;
 
-    const newMessage = {
-      sender: "resident", // hoặc lấy từ user.role nếu có AuthContext
+    const newMsg = {
+      sender: "resident",
+      senderId: user._id,
+      receiverId: "admin",
       content: input.trim(),
-      createdAt: new Date(),
+      timestamp: new Date(),
     };
 
-    // Gửi tin nhắn lên server
-    socket.emit("send_message", newMessage);
-    // Hiển thị ngay ở giao diện local
-    setMessages((prev) => [...prev, newMessage]);
+    socket.emit("send_message", newMsg);
     setInput("");
   };
 
-  // ================== GIAO DIỆN ==================
   return (
     <div className="support-wrapper">
-      {/* 🔹 KHUNG CHAT */}
       <section className="chat-section">
-        <h2 className="section-title">💬 Chat hỗ trợ cư dân</h2>
+        <h2 className="section-title">💬 Hỗ trợ cư dân trực tuyến</h2>
 
         <div className="chat-container">
-          {messages.length === 0 ? (
-            <p className="no-message">Chưa có tin nhắn nào</p>
-          ) : (
-            messages.map((msg, index) => (
-              <div
-                key={index}
-                className={`chat-row ${
-                  msg.sender === "resident" ? "right" : "left"
-                }`}
-              >
-                <div className="chat-bubble">
-                  <strong>
-                    {msg.sender === "resident" ? "Bạn" : "Admin"}:
-                  </strong>{" "}
-                  {msg.content}
+          {messages.map((m, i) => (
+            <div
+              key={i}
+              className={`chat-row ${m.sender === "resident" ? "right" : "left"}`}
+            >
+              <div className="chat-bubble">
+                <div>
+                  <strong>{m.sender === "resident" ? "Bạn" : "Admin"}:</strong>{" "}
+                  {m.content}
                 </div>
+                <span className="time">{formatTime(m.createdAt || m.timestamp)}</span>
               </div>
-            ))
-          )}
+            </div>
+          ))}
           <div ref={chatEndRef} />
         </div>
 
-        {/* Form gửi tin */}
         <form className="chat-input-box" onSubmit={handleSend}>
           <input
             type="text"
@@ -102,20 +115,18 @@ const Support = () => {
         </form>
       </section>
 
-      {/* 🔹 THÔNG TIN LIÊN HỆ */}
       <aside className="info-section">
-        <h3 className="section-title">📍 Liên hệ Ban quản lý</h3>
+        <h3 className="section-title">📍 Ban Quản Lý Chung Cư</h3>
         <div className="info-card">
           <p><strong>Ban Quản Lý Chung Cư Mini</strong></p>
           <p>📞 0909 000 111</p>
           <p>✉️ admin@chungcu-mini.vn</p>
-          <p>🏢 Vinhomes Grand Park, Nguyễn Xiển, Quận 9</p>
+          <p>🏢 Vinhomes Grand Park, Quận 9</p>
         </div>
-
         <div className="map-container">
           <iframe
             title="Bản đồ"
-            src="https://www.google.com/maps?q=Vinhomes%20Grand%20Park%2C%20Qu%E1%BA%ADn%209%2C%20TP.HCM&output=embed"
+            src="https://www.google.com/maps?q=Vinhomes%20Grand%20Park&output=embed"
             loading="lazy"
             allowFullScreen
           ></iframe>

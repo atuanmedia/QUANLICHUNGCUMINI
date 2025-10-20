@@ -24,6 +24,8 @@ const AdminSidebar = () => {
         { name: 'Phản ánh', icon: ChartBarIcon, path: '/admin/reports' },
         { name: 'Thông báo', icon: MegaphoneIcon, path: '/admin/announcements' },
         { name: 'Tạm trú / Tạm vắng', icon: MegaphoneIcon, path: '/admin/temp-residence' },
+        { name: "Hỗ trợ cư dân", icon: UsersIcon, path: "/admin/chat-support" },
+
     ];
 
     return (

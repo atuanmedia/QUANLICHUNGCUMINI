@@ -1,12 +1,14 @@
-// backend/src/routes/chatRoutes.js
 const express = require("express");
 const ChatMessage = require("../models/ChatMessage");
 const router = express.Router();
 
-// 📜 Lấy toàn bộ lịch sử chat (admin hoặc resident đều có thể xem)
-router.get("/", async (req, res) => {
+// 📜 Lấy lịch sử chat của 1 cư dân
+router.get("/:userId", async (req, res) => {
   try {
-    const messages = await ChatMessage.find().sort({ createdAt: 1 });
+    const { userId } = req.params;
+    const messages = await ChatMessage.find({
+      $or: [{ senderId: userId }, { receiverId: userId }],
+    }).sort({ createdAt: 1 });
     res.json(messages);
   } catch (err) {
     console.error("❌ Lỗi tải lịch sử chat:", err.message);
