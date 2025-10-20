@@ -34,7 +34,10 @@ import ResidentAnnouncements from "./pages/Resident/ResidentAnnouncements";
 import ResidentInvoices from "./pages/Resident/ResidentInvoices";
 import ResidentReports from "./pages/Resident/ResidentReports";
 import TempResidenceResident from "./pages/Resident/TempResidenceResident";
-import Support from "./pages/Resident/Support"; // ✅ đảm bảo file này tồn tại
+import Support from "./pages/Resident/Support";
+
+// 🌟 Public pages
+import AboutPage from "./pages/Resident/AboutPage";
 
 // ✅ Hiệu ứng fade chuyển trang
 const pageTransition = {
@@ -77,17 +80,14 @@ function App() {
   const location = useLocation();
   const { theme } = useTheme();
 
-  // 🎨 Hiệu ứng theme body
   useEffect(() => {
     document.body.style.transition = "background-color 0.3s ease, color 0.3s ease";
   }, []);
 
   return (
     <>
-      {/* Thanh loading khi chuyển route */}
       <RouteChangeProgress />
 
-      {/* Toast notification */}
       <ToastContainer
         position="top-right"
         autoClose={2500}
@@ -98,7 +98,6 @@ function App() {
         theme={theme === "dark" ? "dark" : "colored"}
       />
 
-      {/* Hiệu ứng chuyển trang */}
       <AnimatePresence mode="wait">
         <motion.div
           key={location.pathname}
@@ -130,7 +129,7 @@ function App() {
               <Route path="invoices" element={<InvoiceManagement />} />
               <Route path="reports" element={<ReportManagement />} />
               <Route path="temp-residence" element={<TempResidenceAdmin />} />
-              <Route path="/admin/chat-support" element={<ChatSupport />} />
+              <Route path="chat-support" element={<ChatSupport />} />
             </Route>
 
             {/* 🏠 Resident routes */}
@@ -148,8 +147,11 @@ function App() {
               <Route path="invoices" element={<ResidentInvoices />} />
               <Route path="reports" element={<ResidentReports />} />
               <Route path="temp-residence" element={<TempResidenceResident />} />
-              <Route path="support" element={<Support />} /> {/* ✅ Route Hỗ trợ */}
+              <Route path="support" element={<Support />} />
             </Route>
+
+            {/* 🌟 Trang công khai */}
+            <Route path="/about" element={<AboutPage />} />
 
             {/* ⚠️ Fallback */}
             <Route path="/unauthorized" element={<UnauthorizedPage />} />
