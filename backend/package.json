@@ -22,6 +22,7 @@
     "mongoose": "^8.18.3",
     "morgan": "^1.10.0",
     "multer": "^2.0.2",
+    "node-cache": "^5.1.2",
     "pdfkit": "^0.17.2",
     "socket.io": "^4.8.1"
   },

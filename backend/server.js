@@ -2,12 +2,25 @@ require("dotenv").config();
 const http = require("http");
 const { Server } = require("socket.io");
 const mongoose = require("mongoose");
+const morgan = require("morgan");
+const NodeCache = require("node-cache");
 const app = require("./app");
+const connectDB = require("./src/config/db");
 const ChatMessage = require("./src/models/ChatMessage");
 
 const PORT = process.env.PORT || 5000;
 const FRONTEND_URL =
   process.env.FRONTEND_URL || "https://quanlichungcumini.vercel.app";
+
+// ✅ Khởi tạo cache (sử dụng lại cho router)
+const cache = new NodeCache({ stdTTL: 60, checkperiod: 120 });
+app.set("cache", cache);
+
+// ✅ Kết nối MongoDB tối ưu
+connectDB();
+
+// ✅ Logging cơ bản
+app.use(morgan("tiny"));
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -18,55 +31,44 @@ const io = new Server(server, {
 });
 
 // ===============================
-// 🧠 Quản lý socket kết nối
+// 🧠 Socket Chat (giữ nguyên logic cũ)
 // ===============================
 
-const onlineUsers = new Map(); // { socket.id -> userInfo }
+const onlineUsers = new Map();
 let adminSocket = null;
 
-// 🔗 Khi client kết nối
 io.on("connection", (socket) => {
   console.log("🟢 Socket connected:", socket.id);
 
-  // 🏠 Cư dân join
   socket.on("resident_join", (userInfo) => {
     onlineUsers.set(socket.id, userInfo);
     console.log(`🏠 Resident joined: ${userInfo.fullName}`);
-
-    // Gửi danh sách user cho admin
     if (adminSocket) {
       io.to(adminSocket).emit("user_list", Array.from(onlineUsers.values()));
     }
   });
 
-  // 👑 Admin join
   socket.on("admin_join", () => {
     adminSocket = socket.id;
     console.log("👑 Admin joined chat");
-    // Gửi danh sách cư dân đang online
     io.to(adminSocket).emit("user_list", Array.from(onlineUsers.values()));
   });
 
-  // 💬 Khi có tin nhắn mới
   socket.on("send_message", async (data) => {
     console.log("💬 Tin nhắn:", data);
-
-    // ✅ Nếu cư dân gửi → gửi cho admin + phản hồi lại chính họ
     if (data.sender === "resident") {
       if (adminSocket) io.to(adminSocket).emit("receive_message", data);
-      io.to(socket.id).emit("receive_message", data); // cư dân thấy ngay tin mình
+      io.to(socket.id).emit("receive_message", data);
     }
 
-    // ✅ Nếu admin gửi → tìm đúng cư dân nhận + phản hồi lại cho admin
     if (data.sender === "admin") {
       const target = [...onlineUsers.entries()].find(
         ([, u]) => u._id === data.receiverId
       );
       if (target) io.to(target[0]).emit("receive_message", data);
-      io.to(socket.id).emit("receive_message", data); // admin thấy ngay tin mình
+      io.to(socket.id).emit("receive_message", data);
     }
 
-    // ✅ Lưu DB
     try {
       if (mongoose.connection.readyState === 1) {
         await ChatMessage.create({
@@ -82,7 +84,6 @@ io.on("connection", (socket) => {
     }
   });
 
-  // 🔴 Khi ngắt kết nối
   socket.on("disconnect", () => {
     if (onlineUsers.has(socket.id)) {
       console.log(`🔴 Resident left: ${onlineUsers.get(socket.id).fullName}`);
@@ -92,15 +93,13 @@ io.on("connection", (socket) => {
       console.log("⚠️ Admin disconnected");
       adminSocket = null;
     }
-
     if (adminSocket) {
       io.to(adminSocket).emit("user_list", Array.from(onlineUsers.values()));
     }
   });
 });
 
-// 🚀 Start server
 server.listen(PORT, () => {
-  console.log(`🚀 Server + Socket.IO đang chạy tại cổng ${PORT}`);
-  console.log(`🌐 Cho phép FE: ${FRONTEND_URL}`);
+  console.log(`🚀 Server + Socket.IO chạy tại cổng ${PORT}`);
+  console.log(`🌐 FE được phép truy cập: ${FRONTEND_URL}`);
 });
