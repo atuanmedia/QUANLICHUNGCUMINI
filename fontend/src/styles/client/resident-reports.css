@@ -1,74 +1,79 @@
+/* 🌟 Trang phản ánh */
 .reports-page {
   padding: 30px;
   max-width: 900px;
   margin: 30px auto;
   background: #fff;
   border-radius: 16px;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+  font-family: "Inter", sans-serif;
 }
 
 .reports-title {
-  font-size: 1.8rem;
+  font-size: 1.9rem;
   font-weight: 700;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   text-align: center;
+  color: #1e1e1e;
 }
 
+/* ✏️ Form phản ánh */
 .report-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 30px;
+  gap: 14px;
+  margin-bottom: 35px;
 }
 
-.report-input, .report-textarea {
+.report-input,
+.report-textarea {
   width: 100%;
-  padding: 12px;
+  padding: 12px 14px;
   border-radius: 8px;
   border: 1px solid #ccc;
   outline: none;
   font-size: 1rem;
   transition: all 0.2s;
+  background: #fafafa;
 }
 
-.report-input:focus, .report-textarea:focus {
-  border-color: #4F46E5;
-  box-shadow: 0 0 5px rgba(79,70,229,0.3);
+.report-input:focus,
+.report-textarea:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 5px rgba(79, 70, 229, 0.3);
+  background: #fff;
+}
+
+/* 📨 Nút gửi */
+.button-container {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .report-button {
   display: flex;
-  background: #4F46E5;
+  align-items: center;
+  gap: 8px;
+  background: #4f46e5;
   color: white;
   border: none;
   border-radius: 8px;
-  padding: 10px 14px;
+  padding: 10px 16px;
   cursor: pointer;
   font-weight: 600;
-  transition: background 0.3s;
+  transition: all 0.3s;
 }
 
 .report-button:hover {
-  background: #3730A3;
+  background: #3730a3;
+  transform: scale(1.02);
 }
 
-.report-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.button-container {
-  display: flex;
-  justify-content: flex-end; /* ✅ Đưa nút sang bên phải */
-}
-
-/* Ẩn input gốc */
+/* 📤 Nút upload ảnh */
 .hidden-file-input {
   display: none;
 }
 
-/* Nút upload tuỳ chỉnh */
 .custom-upload-button {
   display: inline-flex;
   align-items: center;
@@ -79,14 +84,15 @@
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: background-color 0.3s ease, transform 0.2s;
   margin-top: 12px;
   user-select: none;
-  width: 150px;
+  width: fit-content;
 }
 
 .custom-upload-button:hover {
-  background-color: #891818;
+  background-color: #b71c1c;
+  transform: scale(1.05);
 }
 
 .upload-icon {
@@ -94,50 +100,54 @@
   margin-right: 8px;
 }
 
-.upload-text {
-  text-transform: uppercase;
-}
-
-/* Xem trước ảnh */
+/* 🖼️ Xem trước ảnh */
 .image-preview {
   display: flex;
-  justify-content: flex-start; /* ảnh nằm bên trái */
+  justify-content: flex-start;
   align-items: center;
   margin-top: 12px;
-  height: 300px; /* chiều cao cố định */
+  max-height: 200px; /* ✅ Giới hạn chiều cao */
   overflow: hidden;
- 
+  border-radius: 10px;
+  border: 1px solid #e0e0e0;
 }
 
-/* Ảnh bên trong */
 .image-preview img {
   width: auto;
   height: 100%;
-  object-fit: contain;
+  max-width: 300px; /* ✅ Giới hạn chiều rộng */
+  object-fit: cover;
+  border-radius: 10px;
   transition: transform 0.3s ease;
 }
 
+.image-preview img:hover {
+  transform: scale(1.05);
+}
 
-
-
-
-
-/*  */
-
-
+/* 📋 Danh sách phản ánh */
 .reports-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 
+/* 🧾 Thẻ phản ánh */
 .report-card {
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  padding: 16px;
-  background: #fafafa;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 18px;
+  background: #f9fafb;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+.report-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 🏷️ Header */
 .report-header {
   display: flex;
   justify-content: space-between;
@@ -153,11 +163,52 @@
   gap: 6px;
 }
 
+/* 💬 Nội dung */
 .report-content {
   color: #333;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+/* 🖼️ Ảnh phản ánh trong danh sách */
+.report-image {
+  display: flex;
+  justify-content: flex-start;
   margin-bottom: 10px;
 }
 
+.report-image img {
+  width: 100%;
+  max-width: 300px; /* ✅ Giới hạn ảnh hiển thị */
+  height: auto;
+  border-radius: 10px;
+  object-fit: cover;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.report-image img:hover {
+  transform: scale(1.05);
+}
+
+/* 📅 Footer */
 .report-footer small {
   color: #666;
+  font-size: 0.9rem;
+}
+
+/* 🧱 Responsive */
+@media (max-width: 600px) {
+  .reports-page {
+    padding: 20px;
+  }
+
+  .reports-title {
+    font-size: 1.5rem;
+  }
+
+  .report-image img,
+  .image-preview img {
+    max-width: 100%;
+  }
 }

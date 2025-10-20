@@ -15,9 +15,9 @@ const ReportManagement = () => {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10; // Hiển thị 10 phản ánh/trang
+  const itemsPerPage = 10;
 
-  // 🔒 Escape HTML để tránh lỗi hiển thị HTML trong popup
+  // 🔒 Escape HTML
   const escapeHtml = (unsafe) =>
     unsafe
       ?.replace(/&/g, "&amp;")
@@ -37,7 +37,6 @@ const ReportManagement = () => {
       });
       setReports(data);
       console.log("📊 Dữ liệu phản ánh:", data);
-      console.log("🔢 Số lượng phản ánh:", data?.length || 0);
     } catch (err) {
       console.error("❌ Lỗi tải phản ánh:", err);
       toast.error("Không thể tải danh sách phản ánh!");
@@ -50,12 +49,11 @@ const ReportManagement = () => {
     if (user?.role === "admin") fetchReports();
   }, [user, filterStatus]);
 
-  // Reset to page 1 when filter changes
   useEffect(() => {
     setCurrentPage(1);
   }, [filterStatus]);
 
-  // 👁️ Xem chi tiết phản ánh (popup đẹp + fix lỗi không đóng được)
+  // 👁️ Xem chi tiết phản ánh (popup)
   const handleViewDetail = (report) => {
     Swal.fire({
       title: `📢 ${escapeHtml(report.title || "Phản ánh")}`,
@@ -65,12 +63,27 @@ const ReportManagement = () => {
           <p><b>🏠 Căn hộ:</b> ${escapeHtml(report.apartment?.apartmentCode || "N/A")}</p>
           <p><b>📅 Ngày gửi:</b> ${new Date(report.createdAt).toLocaleDateString("vi-VN")}</p>
           <hr style="margin:10px 0"/>
-          <p style="white-space:pre-line;"><b>Nội dung:</b><br/>${escapeHtml(
-            report.content || "(Không có nội dung)"
-          )}</p>
+          <p style="white-space:pre-line;">
+            <b>Nội dung:</b><br/>${escapeHtml(report.content || "(Không có nội dung)")}
+          </p>
           ${
             report.images && report.images.length > 0
-              ? `<img src="${report.images[0]}" alt="Ảnh phản ánh" style="margin-top:10px;border-radius:8px;max-height:200px;object-fit:cover"/>`
+              ? `<div style="text-align:center;margin-top:10px">
+                    <img 
+                      src="https://quanlichungcumini.onrender.com${report.images[0]}" 
+                      alt="Ảnh phản ánh"
+                      style="
+                        margin-top:10px;
+                        border-radius:10px;
+                        max-width:100%;
+                        max-height:250px;
+                        object-fit:contain;
+                        display:block;
+                        margin:auto;
+                        box-shadow:0 2px 10px rgba(0,0,0,0.2);
+                      "
+                    />
+                 </div>`
               : ""
           }
         </div>
@@ -80,10 +93,9 @@ const ReportManagement = () => {
       background: "#fff",
       color: "#111",
       confirmButtonColor: "#2563eb",
-      allowOutsideClick: true, // ✅ click ra ngoài để đóng
-      allowEscapeKey: true, // ✅ nhấn ESC để đóng
+      allowOutsideClick: true,
+      allowEscapeKey: true,
       didOpen: () => {
-        // ✅ Ép z-index sau khi popup mở
         const swalContainer = document.querySelector(".swal2-container");
         if (swalContainer) swalContainer.style.zIndex = "99999";
       },
@@ -114,8 +126,6 @@ const ReportManagement = () => {
       await api.delete(`/reports/${reportId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      // Cập nhật lại danh sách
       setReports((prev) => prev.filter((r) => r._id !== reportId));
       toast.success("🗑️ Đã xoá phản ánh thành công!");
     } catch (err) {
@@ -124,69 +134,31 @@ const ReportManagement = () => {
     }
   };
 
-  // Pagination calculations
+  // Pagination logic
   const totalPages = Math.ceil(reports.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentReports = reports.slice(startIndex, startIndex + itemsPerPage);
 
-  console.log("📄 Pagination Info:", {
-    totalReports: reports.length,
-    itemsPerPage,
-    totalPages,
-    currentPage,
-    startIndex,
-    endIndex: startIndex + itemsPerPage,
-    currentReportsCount: currentReports.length
-  });
-
-  // Pagination handlers
   const goToPage = (page) => {
-    console.log("🔄 Chuyển đến trang:", page);
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+  const goToPreviousPage = () => setCurrentPage((p) => Math.max(p - 1, 1));
+  const goToNextPage = () => setCurrentPage((p) => Math.min(p + 1, totalPages));
 
-  const goToPreviousPage = () => {
-    setCurrentPage(prev => Math.max(prev - 1, 1));
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const goToNextPage = () => {
-    setCurrentPage(prev => Math.min(prev + 1, totalPages));
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  // Generate page numbers for pagination
   const getPageNumbers = () => {
     const pages = [];
     const maxVisiblePages = 5;
-    
     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
     let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-    
-    // Adjust start page if we're near the end
-    if (endPage - startPage + 1 < maxVisiblePages) {
+    if (endPage - startPage + 1 < maxVisiblePages)
       startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-    
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(i);
-    }
-    
-    console.log("🔢 Số trang hiển thị:", pages);
+    for (let i = startPage; i <= endPage; i++) pages.push(i);
     return pages;
   };
 
   const pageNumbers = getPageNumbers();
-  // Luôn hiển thị pagination khi có dữ liệu, kể cả chỉ có 1 trang
   const showPagination = !loading && reports.length > 0;
-
-  console.log("🎯 Điều kiện hiển thị pagination:", {
-    loading,
-    reportsCount: reports.length,
-    totalPages,
-    showPagination
-  });
 
   if (loading)
     return (
@@ -200,7 +172,7 @@ const ReportManagement = () => {
     <div className="resident-page fade-in">
       <h2 className="resident-title">📋 Quản lý phản ánh & báo cáo</h2>
 
-      {/* Bộ lọc trạng thái */}
+      {/* Bộ lọc */}
       <div className="filter-status">
         <label>Lọc theo trạng thái:</label>
         <select
@@ -219,9 +191,8 @@ const ReportManagement = () => {
       {!loading && reports.length > 0 && (
         <div className="resident-summary">
           Hiển thị {Math.min(startIndex + 1, reports.length)}-
-          {Math.min(startIndex + currentReports.length, reports.length)} 
-          trên tổng số {reports.length} phản ánh
-          {filterStatus !== "all" && ` (Đã lọc theo: ${getStatusLabel(filterStatus)})`}
+          {Math.min(startIndex + currentReports.length, reports.length)} trên{" "}
+          {reports.length} phản ánh
         </div>
       )}
 
@@ -242,9 +213,7 @@ const ReportManagement = () => {
             {currentReports.length === 0 ? (
               <tr>
                 <td colSpan="6" className="no-data">
-                  {filterStatus === "all" 
-                    ? "Không có phản ánh nào" 
-                    : `Không có phản ánh nào với trạng thái "${getStatusLabel(filterStatus)}"`}
+                  Không có phản ánh nào
                 </td>
               </tr>
             ) : (
@@ -291,7 +260,7 @@ const ReportManagement = () => {
           </tbody>
         </table>
 
-        {/* Pagination Component - LUÔN HIỂN THỊ KHI CÓ DỮ LIỆU */}
+        {/* Pagination */}
         {showPagination && (
           <div className="resident-pagination">
             <button
@@ -302,10 +271,12 @@ const ReportManagement = () => {
               <FaChevronLeft />
             </button>
 
-            {pageNumbers.map(page => (
+            {pageNumbers.map((page) => (
               <button
                 key={page}
-                className={`pagination-btn ${currentPage === page ? 'active' : ''}`}
+                className={`pagination-btn ${
+                  currentPage === page ? "active" : ""
+                }`}
                 onClick={() => goToPage(page)}
               >
                 {page}
@@ -329,14 +300,18 @@ const ReportManagement = () => {
     </div>
   );
 
-  // Helper function to get status label
   function getStatusLabel(status) {
     switch (status) {
-      case "pending": return "Chờ xử lý";
-      case "in_progress": return "Đang xử lý";
-      case "resolved": return "Đã giải quyết";
-      case "cancelled": return "Đã hủy";
-      default: return status;
+      case "pending":
+        return "Chờ xử lý";
+      case "in_progress":
+        return "Đang xử lý";
+      case "resolved":
+        return "Đã giải quyết";
+      case "cancelled":
+        return "Đã hủy";
+      default:
+        return status;
     }
   }
 };

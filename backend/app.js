@@ -45,6 +45,8 @@ app.use('/api/reports', require('./src/routes/reportRoutes'));
 app.use('/api/announcements', require('./src/routes/announcementRoutes'));
 app.use('/api/temp-residence', require('./src/routes/tempResidenceRoutes'));
 app.use('/api/payment', require('./src/routes/paymentRoutes'));
+app.use('/api/chat', require('./src/routes/chatRoutes'));
+
 
 // ===== Error Handling =====
 app.use(notFound);
