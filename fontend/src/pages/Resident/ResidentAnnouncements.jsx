@@ -42,6 +42,8 @@ const ResidentAnnouncements = () => {
         </p>
       </div>
 
+
+
       <div className="announcement-filter">
         <FaFilter className="filter-icon" />
         <select

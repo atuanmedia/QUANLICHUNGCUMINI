@@ -35,44 +35,47 @@ const DashboardAdmin = () => {
   const [error, setError] = useState(null);
   const [recentActivities, setRecentActivities] = useState([]);
 
+  // ✅ Dữ liệu thống kê tài chính
+  const [monthlyFinance, setMonthlyFinance] = useState([]);
+  const [yearlyFinance, setYearlyFinance] = useState([]);
+
+  // =============================
+  // 🔹 FETCH dữ liệu tổng quan
+  // =============================
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        const { data } = await api.get("/reports/stats");
+        const [statsRes, recentRes, monthlyRes, yearlyRes] = await Promise.all([
+          api.get("/reports/stats"),
+          api.get("/reports/recent"),
+          api.get("/invoices/stats/monthly"),
+          api.get("/invoices/stats/yearly"),
+        ]);
+
         setStats({
-          residents: { total: data?.residents?.total ?? 0 },
+          residents: { total: statsRes.data?.residents?.total ?? 0 },
           apartments: {
-            total: data?.apartments?.total ?? 0,
-            occupied: data?.apartments?.occupied ?? 0,
+            total: statsRes.data?.apartments?.total ?? 0,
+            occupied: statsRes.data?.apartments?.occupied ?? 0,
           },
-          invoices: { unpaid: data?.invoices?.unpaid ?? 0 },
-          reports: { pending: data?.reports?.pending ?? 0 },
+          invoices: { unpaid: statsRes.data?.invoices?.unpaid ?? 0 },
+          reports: { pending: statsRes.data?.reports?.pending ?? 0 },
         });
+
+        setRecentActivities(recentRes.data || []);
+        setMonthlyFinance(monthlyRes.data.monthlyStats || []);
+        setYearlyFinance(yearlyRes.data || []);
       } catch (err) {
-        console.error("❌ Error fetching stats:", err);
-        setError("Không thể tải dữ liệu tổng quan.");
+        console.error("❌ Lỗi khi tải dữ liệu dashboard:", err);
+        setError("Không thể tải dữ liệu tổng quan hoặc thống kê tài chính.");
       } finally {
         setLoading(false);
       }
     };
 
-    const fetchRecent = async () => {
-      try {
-        const { data } = await api.get("/reports/recent"); // API giả định
-        setRecentActivities(data || []);
-      } catch {
-        setRecentActivities([
-          { id: 1, text: "🧾 Cư dân Phòng 203 vừa thanh toán hóa đơn tháng 10" },
-          { id: 2, text: "🚨 Báo cáo sự cố mới: Rò rỉ nước tại tầng 3" },
-          { id: 3, text: "📢 Thông báo bảo trì điện tầng 2 - ngày 22/10" },
-        ]);
-      }
-    };
-
-    if (user && user.role === "admin") {
-      fetchStats();
-      fetchRecent();
+    if (user?.role === "admin") {
+      fetchDashboardData();
     }
   }, [user]);
 
@@ -84,32 +87,31 @@ const DashboardAdmin = () => {
       </p>
     );
 
-  // ✅ Biểu đồ doanh thu giả định (demo)
-  const monthlyRevenueData = {
-    labels: ["Th1", "Th2", "Th3", "Th4", "Th5", "Th6", "Th7", "Th8", "Th9", "Th10"],
+  // =============================
+  // 📊 Cấu hình biểu đồ Thu - Chi theo tháng
+  // =============================
+  const monthlyFinanceData = {
+    labels: monthlyFinance.map((m) => `Th${m.month}`),
     datasets: [
       {
-        label: "Doanh thu (VNĐ)",
-        data: [21000000, 25000000, 28000000, 32000000, 29000000, 35000000, 33000000, 37000000, 39000000, 42000000],
-        borderColor: "rgba(245, 214, 108, 1)",
-        backgroundColor: "rgba(245, 214, 108, 0.3)",
+        label: "Tổng thu (VNĐ)",
+        data: monthlyFinance.map((m) => m.income),
+        borderColor: "rgba(75, 192, 192, 1)",
+        backgroundColor: "rgba(75, 192, 192, 0.2)",
         tension: 0.4,
         fill: true,
       },
     ],
   };
 
-  const monthlyRevenueOptions = {
+  const monthlyFinanceOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { display: false },
-      title: { display: true, text: "📈 Doanh thu theo tháng (VNĐ)" },
+      legend: { display: true },
+      title: { display: true, text: "💰 Thống kê thu - chi theo tháng" },
     },
     scales: {
-      x: {
-        grid: { display: false },
-      },
       y: {
         ticks: {
           callback: (value) => value.toLocaleString("vi-VN") + "₫",
@@ -122,7 +124,7 @@ const DashboardAdmin = () => {
     <div className="dashboard-container">
       <h1 className="dashboard-title">Bảng điều khiển</h1>
 
-      {/* Thẻ thống kê */}
+      {/* ======= THẺ TỔNG QUAN ======= */}
       <div className="dashboard-grid">
         <Link to="/admin/residents" className="stat-card">
           <div className="stat-icon">
@@ -130,7 +132,7 @@ const DashboardAdmin = () => {
           </div>
           <div className="stat-text">
             <p>Tổng số cư dân</p>
-            <p>{stats?.residents?.total ?? 0}</p>
+            <p>{stats.residents.total}</p>
           </div>
         </Link>
 
@@ -141,8 +143,7 @@ const DashboardAdmin = () => {
           <div className="stat-text">
             <p>Căn hộ có người ở</p>
             <p>
-              {`${stats?.apartments?.occupied ?? 0} / ${stats?.apartments?.total ?? 0
-                }`}
+              {stats.apartments.occupied} / {stats.apartments.total}
             </p>
           </div>
         </Link>
@@ -153,7 +154,7 @@ const DashboardAdmin = () => {
           </div>
           <div className="stat-text">
             <p>Hóa đơn chưa thanh toán</p>
-            <p>{stats?.invoices?.unpaid ?? 0}</p>
+            <p>{stats.invoices.unpaid}</p>
           </div>
         </Link>
 
@@ -163,22 +164,59 @@ const DashboardAdmin = () => {
           </div>
           <div className="stat-text">
             <p>Báo cáo chờ xử lý</p>
-            <p>{stats?.reports?.pending ?? 0}</p>
+            <p>{stats.reports.pending}</p>
           </div>
         </Link>
       </div>
 
-      {/* Biểu đồ Doanh thu */}
-      <div className="chart-card">
-        <h2 className="text-xl font-semibold mb-4">Tổng quan hoạt động</h2>
+      {/* ======= BIỂU ĐỒ THU CHI ======= */}
+      <div className="chart-card mt-6">
+        <h2 className="text-xl font-semibold mb-4">📈 Thống kê thu - chi theo tháng</h2>
         <div style={{ height: "350px" }}>
-          <Line data={monthlyRevenueData} options={monthlyRevenueOptions} />
+          {monthlyFinance.length > 0 ? (
+            <Line data={monthlyFinanceData} options={monthlyFinanceOptions} />
+          ) : (
+            <p className="text-center text-gray-500 mt-10">
+              Không có dữ liệu thu - chi trong năm.
+            </p>
+          )}
         </div>
       </div>
 
-      {/* Hoạt động gần đây */}
+      {/* ======= BẢNG THU CHI THEO NĂM ======= */}
       <div className="chart-card mt-6">
-        <h2 className="chart-title">Hoạt động gần đây</h2>
+        <h2 className="chart-title mb-3">📆 Thống kê thu - chi theo năm</h2>
+        <table className="w-full border-collapse text-center text-sm md:text-base">
+          <thead className="bg-gray-100 text-gray-700">
+            <tr>
+              <th className="p-2 border">Năm</th>
+              <th className="p-2 border">Tổng thu (VNĐ)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {yearlyFinance.length > 0 ? (
+              yearlyFinance.map((y) => (
+                <tr key={y.year} className="hover:bg-gray-50">
+                  <td className="border p-2 font-semibold">{y.year}</td>
+                  <td className="border p-2 text-green-700 font-medium">
+                    {y.income.toLocaleString("vi-VN")}₫
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={2} className="border p-3 text-gray-500">
+                  Không có dữ liệu năm.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ======= HOẠT ĐỘNG GẦN ĐÂY ======= */}
+      <div className="chart-card mt-6">
+        <h2 className="chart-title">📰 Hoạt động gần đây</h2>
         <ul className="recent-activity-list">
           {recentActivities.map((item) => (
             <li key={item.id} className="recent-activity-item">
@@ -188,7 +226,6 @@ const DashboardAdmin = () => {
           ))}
         </ul>
       </div>
-
     </div>
   );
 };
