@@ -61,16 +61,16 @@ app.get("/api/admin/activities/recent", async (req, res) => {
       Invoice.find()
         .populate("apartment", "name code")
         .sort({ createdAt: -1 })
-        .limit(5),
+        .limit(1),
       Report.find()
         .populate("apartment", "name code")
         .populate("resident", "fullName")
         .sort({ createdAt: -1 })
-        .limit(5),
+        .limit(1),
       Announcement.find()
         .populate("issuedBy", "fullName")
         .sort({ createdAt: -1 })
-        .limit(5),
+        .limit(1),
     ]);
 
     const activities = [
@@ -96,7 +96,7 @@ app.get("/api/admin/activities/recent", async (req, res) => {
       })),
     ]
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, 10);
+      .slice(0, 3);
 
     res.json(activities);
   } catch (error) {
