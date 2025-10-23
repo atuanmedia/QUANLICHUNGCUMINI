@@ -17,12 +17,24 @@ import {
   Title,
   Tooltip,
   Legend,
+  Filler, // 🧩 thêm plugin Filler để fix lỗi fill
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 import api from "../../api/api";
-import "../../styles/admin/componentadmin.css"; // 💅 import CSS riêng cho bảng năm
+import "../../styles/admin/componentadmin.css";
+import AIChatBox from "../../components/AIChatBox"; // 💬 Trợ lý ảo AI
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+// ✅ Đăng ký plugin cần thiết cho Chart.js
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler // ✅ bắt buộc nếu dùng fill: true
+);
 
 const DashboardAdmin = () => {
   const { user } = useAuth();
@@ -35,25 +47,19 @@ const DashboardAdmin = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [recentActivities, setRecentActivities] = useState([]);
-
-  // ✅ Dữ liệu thống kê tài chính
   const [monthlyFinance, setMonthlyFinance] = useState([]);
   const [yearlyFinance, setYearlyFinance] = useState([]);
 
-  // =============================
-  // 🔹 FETCH dữ liệu tổng quan
-  // =============================
+  // 🔹 Fetch dữ liệu tổng quan Dashboard
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-
-        // 🔧 Gọi song song tất cả API cần thiết
         const [statsRes, monthlyRes, yearlyRes, activitiesRes] = await Promise.all([
           api.get("/reports/stats").catch(() => ({ data: {} })),
           api.get("/invoices/stats/monthly").catch(() => ({ data: { monthlyStats: [] } })),
           api.get("/invoices/stats/yearly").catch(() => ({ data: [] })),
-          api.get("/admin/activities/recent").catch(() => ({ data: [] })), // 🆕 API hoạt động gần đây
+          api.get("/admin/activities/recent").catch(() => ({ data: [] })),
         ]);
 
         setStats({
@@ -77,9 +83,7 @@ const DashboardAdmin = () => {
       }
     };
 
-    if (user?.role === "admin") {
-      fetchDashboardData();
-    }
+    if (user?.role === "admin") fetchDashboardData();
   }, [user]);
 
   if (loading) return <Spinner />;
@@ -90,9 +94,7 @@ const DashboardAdmin = () => {
       </p>
     );
 
-  // =============================
-  // 📊 Cấu hình biểu đồ Thu - Chi theo tháng
-  // =============================
+  // 📊 Dữ liệu biểu đồ thu - chi
   const monthlyFinanceData = {
     labels: monthlyFinance.map((m) => `Th${m.month}`),
     datasets: [
@@ -100,9 +102,9 @@ const DashboardAdmin = () => {
         label: "Tổng thu (VNĐ)",
         data: monthlyFinance.map((m) => m.income),
         borderColor: "rgba(75, 192, 192, 1)",
-        backgroundColor: "rgba(75, 192, 192, 0.2)",
+        backgroundColor: "rgba(75, 192, 192, 0.3)",
         tension: 0.4,
-        fill: true,
+        fill: true, // 🟢 có thể dùng an toàn vì đã đăng ký Filler
       },
     ],
   };
@@ -123,9 +125,7 @@ const DashboardAdmin = () => {
     },
   };
 
-  // =============================
-  // ⏱️ Hàm hiển thị "x phút / giờ / ngày trước"
-  // =============================
+  // ⏱️ Hiển thị thời gian tương đối
   const formatTimeAgo = (dateString) => {
     const diff = (new Date() - new Date(dateString)) / 1000;
     if (diff < 60) return "vừa xong";
@@ -135,14 +135,11 @@ const DashboardAdmin = () => {
     return new Date(dateString).toLocaleDateString("vi-VN");
   };
 
-  // =============================
-  // 🖼️ Render giao diện
-  // =============================
   return (
     <div className="dashboard-container">
       <h1 className="dashboard-title">Bảng điều khiển</h1>
 
-      {/* ======= THẺ TỔNG QUAN ======= */}
+      {/* ===== THẺ TỔNG QUAN ===== */}
       <div className="dashboard-grid">
         <Link to="/admin/residents" className="stat-card">
           <div className="stat-icon">
@@ -187,11 +184,9 @@ const DashboardAdmin = () => {
         </Link>
       </div>
 
-      {/* ======= BIỂU ĐỒ THU CHI ======= */}
+      {/* ===== BIỂU ĐỒ THU CHI ===== */}
       <div className="chart-card mt-6">
-        <h2 className="text-xl font-semibold mb-4">
-          📈 Thống kê thu - chi theo tháng
-        </h2>
+        <h2 className="text-xl font-semibold mb-4">📈 Thống kê thu - chi theo tháng</h2>
         <div style={{ height: "350px" }}>
           {monthlyFinance.length > 0 ? (
             <Line data={monthlyFinanceData} options={monthlyFinanceOptions} />
@@ -203,10 +198,9 @@ const DashboardAdmin = () => {
         </div>
       </div>
 
-      {/* ======= BẢNG THU CHI THEO NĂM ======= */}
+      {/* ===== BẢNG NĂM ===== */}
       <div className="finance-table-card mt-6 pt-10">
         <h2 className="finance-table-title mb-3 mt-10">📆 Thống kê thu - chi theo năm</h2>
-
         <table className="finance-table">
           <thead>
             <tr>
@@ -235,7 +229,7 @@ const DashboardAdmin = () => {
         </table>
       </div>
 
-      {/* ======= HOẠT ĐỘNG GẦN ĐÂY ======= */}
+      {/* ===== HOẠT ĐỘNG GẦN ĐÂY ===== */}
       <div className="chart-card mt-6">
         <h2 className="chart-title mb-3">📰 Hoạt động gần đây</h2>
         <ul className="recent-activity-list space-y-3">
@@ -249,9 +243,17 @@ const DashboardAdmin = () => {
               </li>
             ))
           ) : (
-            <p className="text-gray-500 text-center">Không có hoạt động nào gần đây.</p>
+            <p className="text-gray-500 text-center">
+              Không có hoạt động nào gần đây.
+            </p>
           )}
         </ul>
+      </div>
+
+      {/* ===== CHATBOT AI ===== */}
+      <div className="chart-card mt-6">
+        <h2 className="chart-title mb-3">🤖 Trợ lý ảo AI</h2>
+        <AIChatBox />
       </div>
     </div>
   );

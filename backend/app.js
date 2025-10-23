@@ -11,10 +11,10 @@ const Invoice = require("./src/models/Invoice");
 const Report = require("./src/models/Report");
 const Announcement = require("./src/models/Announcement");
 
-// Load env vars
+// ===============================
+// ⚙️ Load environment & connect DB
+// ===============================
 dotenv.config();
-
-// Connect MongoDB
 connectDB();
 
 const app = express();
@@ -26,12 +26,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
-// Logging
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
-// Static uploads
+// ✅ Cho phép truy cập file tĩnh (ảnh upload)
 app.use("/uploads", express.static(path.join(__dirname, "src/uploads")));
 
 // ===============================
@@ -51,6 +50,9 @@ app.use("/api/announcements", require("./src/routes/announcementRoutes"));
 app.use("/api/temp-residence", require("./src/routes/tempResidenceRoutes"));
 app.use("/api/payment", require("./src/routes/paymentRoutes"));
 app.use("/api/chat", require("./src/routes/chatRoutes"));
+
+// ✅ Route AI Chatbot
+app.use("/api/ai", require("./src/routes/aiChatRoutes"));
 
 // ===============================
 // 🆕 ROUTE: Hoạt động gần đây (cho Dashboard Admin)
