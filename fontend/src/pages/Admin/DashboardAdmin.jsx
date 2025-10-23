@@ -20,6 +20,7 @@ import {
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 import api from "../../api/api";
+import "../../styles/admin/componentadmin.css"; // 💅 import CSS riêng cho bảng năm
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -46,11 +47,13 @@ const DashboardAdmin = () => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        const [statsRes, recentRes, monthlyRes, yearlyRes] = await Promise.all([
-          api.get("/reports/stats"),
-          api.get("/reports/recent"),
-          api.get("/invoices/stats/monthly"),
-          api.get("/invoices/stats/yearly"),
+
+        // 🔧 Gọi song song tất cả API cần thiết
+        const [statsRes, monthlyRes, yearlyRes, activitiesRes] = await Promise.all([
+          api.get("/reports/stats").catch(() => ({ data: {} })),
+          api.get("/invoices/stats/monthly").catch(() => ({ data: { monthlyStats: [] } })),
+          api.get("/invoices/stats/yearly").catch(() => ({ data: [] })),
+          api.get("/admin/activities/recent").catch(() => ({ data: [] })), // 🆕 API hoạt động gần đây
         ]);
 
         setStats({
@@ -63,9 +66,9 @@ const DashboardAdmin = () => {
           reports: { pending: statsRes.data?.reports?.pending ?? 0 },
         });
 
-        setRecentActivities(recentRes.data || []);
         setMonthlyFinance(monthlyRes.data.monthlyStats || []);
         setYearlyFinance(yearlyRes.data || []);
+        setRecentActivities(activitiesRes.data || []);
       } catch (err) {
         console.error("❌ Lỗi khi tải dữ liệu dashboard:", err);
         setError("Không thể tải dữ liệu tổng quan hoặc thống kê tài chính.");
@@ -120,6 +123,21 @@ const DashboardAdmin = () => {
     },
   };
 
+  // =============================
+  // ⏱️ Hàm hiển thị "x phút / giờ / ngày trước"
+  // =============================
+  const formatTimeAgo = (dateString) => {
+    const diff = (new Date() - new Date(dateString)) / 1000;
+    if (diff < 60) return "vừa xong";
+    if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`;
+    if (diff < 2592000) return `${Math.floor(diff / 86400)} ngày trước`;
+    return new Date(dateString).toLocaleDateString("vi-VN");
+  };
+
+  // =============================
+  // 🖼️ Render giao diện
+  // =============================
   return (
     <div className="dashboard-container">
       <h1 className="dashboard-title">Bảng điều khiển</h1>
@@ -171,7 +189,9 @@ const DashboardAdmin = () => {
 
       {/* ======= BIỂU ĐỒ THU CHI ======= */}
       <div className="chart-card mt-6">
-        <h2 className="text-xl font-semibold mb-4">📈 Thống kê thu - chi theo tháng</h2>
+        <h2 className="text-xl font-semibold mb-4">
+          📈 Thống kê thu - chi theo tháng
+        </h2>
         <div style={{ height: "350px" }}>
           {monthlyFinance.length > 0 ? (
             <Line data={monthlyFinanceData} options={monthlyFinanceOptions} />
@@ -184,28 +204,29 @@ const DashboardAdmin = () => {
       </div>
 
       {/* ======= BẢNG THU CHI THEO NĂM ======= */}
-      <div className="chart-card mt-6">
-        <h2 className="chart-title mb-3">📆 Thống kê thu - chi theo năm</h2>
-        <table className="w-full border-collapse text-center text-sm md:text-base">
-          <thead className="bg-gray-100 text-gray-700">
+      <div className="finance-table-card mt-6 pt-10">
+        <h2 className="finance-table-title mb-3 mt-10">📆 Thống kê thu - chi theo năm</h2>
+
+        <table className="finance-table">
+          <thead>
             <tr>
-              <th className="p-2 border">Năm</th>
-              <th className="p-2 border">Tổng thu (VNĐ)</th>
+              <th>Năm</th>
+              <th>Tổng thu (VNĐ)</th>
             </tr>
           </thead>
           <tbody>
             {yearlyFinance.length > 0 ? (
               yearlyFinance.map((y) => (
-                <tr key={y.year} className="hover:bg-gray-50">
-                  <td className="border p-2 font-semibold">{y.year}</td>
-                  <td className="border p-2 text-green-700 font-medium">
+                <tr key={y.year}>
+                  <td className="finance-year">{y.year}</td>
+                  <td className="finance-income">
                     {y.income.toLocaleString("vi-VN")}₫
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={2} className="border p-3 text-gray-500">
+                <td colSpan={2} className="finance-empty">
                   Không có dữ liệu năm.
                 </td>
               </tr>
@@ -216,14 +237,20 @@ const DashboardAdmin = () => {
 
       {/* ======= HOẠT ĐỘNG GẦN ĐÂY ======= */}
       <div className="chart-card mt-6">
-        <h2 className="chart-title">📰 Hoạt động gần đây</h2>
-        <ul className="recent-activity-list">
-          {recentActivities.map((item) => (
-            <li key={item.id} className="recent-activity-item">
-              <span className="activity-icon">{item.text.split(" ")[0]}</span>
-              <span className="activity-text">{item.text.slice(2)}</span>
-            </li>
-          ))}
+        <h2 className="chart-title mb-3">📰 Hoạt động gần đây</h2>
+        <ul className="recent-activity-list space-y-3">
+          {recentActivities.length > 0 ? (
+            recentActivities.map((item) => (
+              <li key={item.id} className="recent-activity-item flex flex-col">
+                <span className="activity-text font-medium">{item.text}</span>
+                <span className="text-sm text-gray-500">
+                  ⏰ {formatTimeAgo(item.createdAt)}
+                </span>
+              </li>
+            ))
+          ) : (
+            <p className="text-gray-500 text-center">Không có hoạt động nào gần đây.</p>
+          )}
         </ul>
       </div>
     </div>
