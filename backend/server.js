@@ -4,15 +4,9 @@ const { Server } = require("socket.io");
 const mongoose = require("mongoose");
 const morgan = require("morgan");
 const NodeCache = require("node-cache");
-const express = require("express"); // 🆕 cần cho router phụ
 const app = require("./app");
 const connectDB = require("./src/config/db");
 const ChatMessage = require("./src/models/ChatMessage");
-
-// 🆕 Import model để hoạt động gần đây
-const Invoice = require("./src/models/Invoice");
-const Report = require("./src/models/Report");
-const Announcement = require("./src/models/Announcement");
 
 const PORT = process.env.PORT || 5000;
 const FRONTEND_URL =
@@ -28,62 +22,6 @@ connectDB();
 // ✅ Logging cơ bản
 app.use(morgan("tiny"));
 
-// ===============================
-// 🆕 ROUTE HOẠT ĐỘNG GẦN ĐÂY
-// ===============================
-app.get("/api/admin/activities/recent", async (req, res) => {
-  try {
-    const [invoices, reports, announcements] = await Promise.all([
-      Invoice.find()
-        .populate("apartment", "name code")
-        .sort({ createdAt: -1 })
-        .limit(5),
-      Report.find()
-        .populate("apartment", "name code")
-        .populate("resident", "fullName")
-        .sort({ createdAt: -1 })
-        .limit(5),
-      Announcement.find()
-        .populate("issuedBy", "fullName")
-        .sort({ createdAt: -1 })
-        .limit(5),
-    ]);
-
-    const activities = [
-      ...invoices.map((i) => ({
-        id: `inv-${i._id}`,
-        type: "invoice",
-        text: `🧾 Hóa đơn tháng ${i.month}/${i.year} (${i.apartment?.code || "N/A"}) - ${
-          i.status === "paid" ? "đã thanh toán" : "chưa thanh toán"
-        }.`,
-        createdAt: i.createdAt,
-      })),
-      ...reports.map((r) => ({
-        id: `rep-${r._id}`,
-        type: "report",
-        text: `🚨 Báo cáo mới: ${r.title} (${r.apartment?.code || "N/A"})`,
-        createdAt: r.createdAt,
-      })),
-      ...announcements.map((a) => ({
-        id: `ann-${a._id}`,
-        type: "announcement",
-        text: `📢 Thông báo: ${a.title}`,
-        createdAt: a.createdAt,
-      })),
-    ]
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, 10);
-
-    res.json(activities);
-  } catch (error) {
-    console.error("❌ Lỗi khi lấy hoạt động gần đây:", error);
-    res.status(500).json({ message: "Không thể tải danh sách hoạt động gần đây." });
-  }
-});
-
-// ===============================
-// 🧠 SOCKET CHAT (GIỮ NGUYÊN)
-// ===============================
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -91,6 +29,10 @@ const io = new Server(server, {
     methods: ["GET", "POST"],
   },
 });
+
+// ===============================
+// 🧠 Socket Chat (giữ nguyên logic cũ)
+// ===============================
 
 const onlineUsers = new Map();
 let adminSocket = null;
