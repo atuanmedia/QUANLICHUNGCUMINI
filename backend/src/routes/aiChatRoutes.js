@@ -1,14 +1,12 @@
 const express = require("express");
 const router = express.Router();
-const OpenAI = require("openai");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const Invoice = require("../models/Invoice");
 const Report = require("../models/Report");
 const Resident = require("../models/Resident");
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 router.post("/chat", async (req, res) => {
   try {
@@ -35,24 +33,25 @@ router.post("/chat", async (req, res) => {
       👥 Cư dân: ${residents.map((r) => r.fullName).join(", ")}
     `;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content:
-            "Bạn là trợ lý ảo của hệ thống quản lý chung cư mini, hãy trả lời ngắn gọn, chính xác và bằng tiếng Việt.",
-        },
-        {
-          role: "user",
-          content: `${context}\n\nCâu hỏi: ${message}`,
-        },
-      ],
-    });
+    // 🧠 Sử dụng model Gemini-Pro
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-    res.json({ answer: completion.choices[0].message.content });
+    const prompt = `
+      Bạn là trợ lý ảo của hệ thống quản lý chung cư mini.
+      Trả lời ngắn gọn, chính xác và bằng tiếng Việt.
+      Dữ liệu hiện tại:
+      ${context}
+
+      Câu hỏi của người dùng:
+      ${message}
+    `;
+
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+
+    res.json({ reply: text });
   } catch (error) {
-    console.error("❌ Lỗi chatbot:", error);
+    console.error("❌ Lỗi Gemini chatbot:", error);
     res.status(500).json({ message: "Không thể xử lý câu hỏi AI." });
   }
 });
